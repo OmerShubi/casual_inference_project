@@ -20,11 +20,12 @@ def parse_data(parsed_data_path):
         df = pd.read_excel(parsed_data_path, header=[0,1], index_col=0)
     return df
 
-def non_parametric_method(df_t0, df_t1):
-    print(f"{'='*10}Running Non Parametric Method{'='*10}")
+def non_parametric_method(df_t0, df_t1, col_name):
+    df_t0 = df_t0[col_name]
+    df_t1 = df_t1[col_name]
     mean_0 = df_t0.mean()
     mean_1 = df_t1.mean()
-    print(f"{'='*10}Non Parametric Method Results{'='*10}")
+    print(f"{'='*10}Non Parametric Method on {col_name} Results{'='*10}")
     print(f"Mean Treatment 0: {mean_0}, Mean Treatment 1: {mean_1}")
     result = ttest_ind(df_t0.values, df_t1.values)
     print(f"Two-sided T test: statistic {result[0]}, pvalue {result[1]}")
@@ -38,14 +39,19 @@ def linear_regression(df_to_model, df_to_plot):
     df_to_plot = df_to_plot[df_to_plot.index >= str("2009")]
     df_to_plot.reset_index(inplace=True)
 
-    print(f"{'=' * 10}Running Linear Regression Method{'=' * 10}")
     df_to_model.reset_index(inplace=True)
     X = df_to_model[["index", "treatment"]].astype(int).values
     y = df_to_model[["num_accidents"]].values
     print(f"{'=' * 10}Linear Regression Method Results{'=' * 10}")
     lr = LinearRegression()
     lr.fit(X,y)
-    print(f"Treatment effect is {lr.coef_[0][1]}")
+    print(f"Treatment effect on num_accidents is {lr.coef_[0][1]}")
+
+    y_normalized = df_to_model[["normalized_num_accidents"]].values
+    lr_normalized = LinearRegression()
+    lr_normalized.fit(X,y_normalized)
+    print(f"Treatment effect on normalized_num_accidents is {lr_normalized.coef_[0][1]}")
+
     X_plot = df_to_plot[["index", "treatment"]].astype(int).values
     y_plot = df_to_plot[["num_accidents"]].values
     plt.scatter(X_plot[:,0], y_plot, c="black")
@@ -57,7 +63,7 @@ def linear_regression(df_to_model, df_to_plot):
     plt.axvline(x=2013, linestyle='--', c="black", label="cut-off year")
     plt.xlabel("Year of issued license")
     plt.ylabel("Num of accidents in 2020")
-    plt.title("Regression Discontinuity by Linear Regression")
+    plt.title("Regression Discontinuity by Linear Regression on 25-29 year olds")
     plt.legend()
     plt.savefig("LinerRegression.png")
     plt.show()
