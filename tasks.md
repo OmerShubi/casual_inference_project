@@ -1,12 +1,17 @@
 
-1. polynomial
+General
 *. include / separate age groups somehow
 *. accidents from 2018?
-*. mean
-*. local regression
 *. move params to central place
 
-*. General statsitics -
+Methods
+*. polynomial
+*. regression generalization (both CEFs)
+*. mean
+*. local regression
+
+General statsitics -
+*. stats
     - nans
     - date range, by month
     - ages breakdown
