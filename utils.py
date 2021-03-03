@@ -54,15 +54,16 @@ def linear_regression(df_to_model, df_to_plot):
 
     X_plot = df_to_plot[["index", "treatment"]].astype(int).values
     y_plot = df_to_plot[["num_accidents"]].values
-    plt.scatter(X_plot[:,0], y_plot, c="black")
-    plt.xlim([2009, 2020])
+    plt.scatter(X_plot[:,0], y_plot, c="black", label='out-of-delta points')
+    plt.scatter(X[:,0], y, c="red", label='in-delta points')
+    plt.xlim([2008.8, 2020.2])
     X0 = df_to_plot[df_to_plot["treatment"] == 0][["index", "treatment"]].astype(int).values
     X1 = df_to_plot[df_to_plot["treatment"] == 1][["index", "treatment"]].astype(int).values
     plt.plot(X0[:,0], lr.predict(X0), c="blue", label="old accompaniment program")
     plt.plot(X1[:,0], lr.predict(X1), c="orange", label="new accompaniment program")
     plt.axvline(x=2013, linestyle='--', c="black", label="cut-off year")
     plt.xlabel("Year of issued license")
-    plt.ylabel("Num of accidents in 2020")
+    plt.ylabel("Number of accidents in 2020")
     plt.title("Regression Discontinuity by Linear Regression on 25-29 year olds")
     plt.legend()
     plt.savefig("LinerRegression.png")
