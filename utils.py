@@ -7,7 +7,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.interpolate import make_interp_spline, BSpline
 from sklearn.preprocessing import PolynomialFeatures
-from sklearn.pipeline import make_pipeline
 
 
 def parse_data(parsed_data_path):
@@ -26,17 +25,19 @@ def parse_data(parsed_data_path):
     return df
 
 
-def mean_method(df_t0, df_t1, col_name):
+def mean_method(df, col_name):
+    df_t0 = df.loc[(df['treatment'] == 0) & (df['in_delta'] == 1)]
+    df_t1 = df.loc[(df['treatment'] == 1) & (df['in_delta'] == 1)]
     df_t0 = df_t0[col_name]
     df_t1 = df_t1[col_name]
     mean_0 = df_t0.mean()
     mean_1 = df_t1.mean()
-    print(f"{'=' * 10}Non Parametric Method on {col_name} Results{'=' * 10}")
-    print(f"Mean Treatment 0: {mean_0}, Mean Treatment 1: {mean_1}, diff: {mean_0 - mean_1}")
-    result = ttest_ind(df_t0.values, df_t1.values)
-    print(f"Two-sided T test: statistic {result[0]}, pvalue {result[1]}")
-    result = ttest_ind(df_t0.values, df_t1.values, alternative="greater")
-    print(f"One-sided T test: statistic {result[0]}, pvalue {result[1]}")
+    print(f"{'=' * 10}Mean Method Results{'=' * 10}")
+    print(f"Treatment effect on {col_name} is {mean_1 - mean_0}")
+    # result = ttest_ind(df_t0.values, df_t1.values)
+    # print(f"Two-sided T test: statistic {result[0]}, pvalue {result[1]}")
+    # result = ttest_ind(df_t0.values, df_t1.values, alternative="greater")
+    # print(f"One-sided T test: statistic {result[0]}, pvalue {result[1]}")
 
 
 # def linear_regression(df_to_model, df_to_plot):
@@ -145,10 +146,6 @@ def polynomial_regression(df, target_col, degree=5):
 
     plt.savefig(f"PolynomialRegression_deg_{degree}_{target_col}.png")
     plt.show()
-
-
-
-
 
 
 def clean_data(df, too_old_age=24):
