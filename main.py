@@ -1,4 +1,4 @@
-from utils import parse_data, mean_method, linear_regression, clean_data
+from utils import parse_data, mean_method, linear_regression, clean_data, polynomial_regression
 import pandas as pd
 
 
@@ -39,8 +39,12 @@ def run_methods(df):
 
 
     # linear regression all data
-    linear_regression(grouped_df, target_col='num_accidents')
-    linear_regression(grouped_df, target_col='normalized_num_accidents')
+    linear_regression(grouped_df.copy(), target_col='num_accidents')
+    linear_regression(grouped_df.copy(), target_col='normalized_num_accidents')
+
+    # poly
+    polynomial_regression(grouped_df.copy(), target_col='num_accidents')
+    polynomial_regression(grouped_df.copy(), target_col='normalized_num_accidents')
 
     print(1)
     # delta = 2

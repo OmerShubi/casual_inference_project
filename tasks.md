@@ -3,12 +3,13 @@ General
 *. include / separate age groups somehow
 *. accidents from 2018?
 *. move params to central place
+*. 
 
 Methods
 *. polynomial
 *. regression generalization (both CEFs)
 *. mean
-*. local regression
+*. local regression + x --> x-cutoff
 *. statistical tests?? 
 
 General statsitics -
