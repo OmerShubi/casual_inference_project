@@ -41,8 +41,8 @@ def run_methods(df):
     linear_regression(grouped_df.copy(), target_col='normalized_num_accidents')
 
     # poly
-    polynomial_regression(grouped_df.copy(), target_col='num_accidents')
-    polynomial_regression(grouped_df.copy(), target_col='normalized_num_accidents')
+    polynomial_regression(grouped_df.copy(), target_col='num_accidents', degree=3)
+    polynomial_regression(grouped_df.copy(), target_col='normalized_num_accidents', degree=3)
 
     delta = 3
     grouped_df.loc[:,'in_delta'] = 0

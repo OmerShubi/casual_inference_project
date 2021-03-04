@@ -9,7 +9,8 @@ Methods
 *. polynomial
 *. regression generalization (both CEFs)
 *. mean
-*. local regression + x --> x-cutoff
+*. x --> x-cutoff
+*. local regression (weighted kernel) 
 *. statistical tests?? 
 
 General statsitics -

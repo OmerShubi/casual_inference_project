@@ -126,24 +126,70 @@ def polynomial_regression(df, target_col, degree=5):
     X0 = X_c[X_c[:, -1] == 0]
     X1 = X_c[X_c[:, -1] == 1]
 
-    # plt.plot(X0[:, 0], polyreg.predict(X0), c="blue", label="old accompaniment program")
-    # plt.plot(X1[:, 0], polyreg.predict(X1), c="orange", label="new accompaniment program")
-    plt.axvline(x=2013, linestyle='--', c="black", label="cut-off year")
-    plt.xlabel("Year of issued license")
-    plt.ylabel(f"{target_col} in 2019")
-    plt.title("Regression Discontinuity by Linear Regression")
-    plt.legend()
+
 
     # 300 represents number of points to make between T.min and T.max
     xnew = np.linspace(X0[:, 0].min(), X0[:, 0].max(), 300)
     spl = make_interp_spline(X0[:, 0], polyreg.predict(X0), k=3)  # type: BSpline
     power_smooth = spl(xnew)
-    plt.plot(xnew, power_smooth)
+    plt.plot(xnew, power_smooth, label="old accompaniment program")
     xnew = np.linspace(X1[:, 0].min(), X1[:, 0].max(), 300)
     spl = make_interp_spline(X1[:, 0], polyreg.predict(X1), k=3)  # type: BSpline
     power_smooth = spl(xnew)
-    plt.plot(xnew, power_smooth)
+    plt.plot(xnew, power_smooth, label="new accompaniment program")
 
+    # plt.plot(X0[:, 0], polyreg.predict(X0), c="blue", label="old accompaniment program")
+    # plt.plot(X1[:, 0], polyreg.predict(X1), c="orange", label="new accompaniment program")
+    plt.axvline(x=2013, linestyle='--', c="black", label="cut-off year")
+    plt.xlabel("Year of issued license")
+    plt.ylabel(f"{target_col} in 2019")
+    plt.title(f"Regression Discontinuity by Polynomial Regression w/ degree {degree}")
+    plt.legend()
+    plt.savefig(f"PolynomialRegression_deg_{degree}_{target_col}.png")
+    plt.show()
+
+def generalization_regression(df, target_col, degree=5, cutoff_date=2013):
+    print(f"{'=' * 10}Polynomial Regression {degree} Method Results{'=' * 10}")
+
+    df.reset_index(inplace=True)
+    df[['date']] -= cutoff_date  # normalization
+    X = df[["date", "treatment"]].astype(int).values
+    y = df[[target_col]].values
+
+    polyfeatures = PolynomialFeatures(degree, include_bias=False).fit_transform(X[:, 0].reshape(-1, 1))
+
+    X_c = np.concatenate([polyfeatures, X[:, 1].reshape(-1, 1)], axis=1)
+
+    polyreg = LinearRegression()
+    polyreg.fit(X_c, y)
+
+    print(f"Treatment effect on {target_col} is {polyreg.coef_[0][-1]}")
+
+    plt.scatter(X[:, 0], y, c="black")
+    plt.xlim([2005.8, 2018.2])
+    plt.ylim(0)
+    X0 = X_c[X_c[:, -1] == 0]
+    X1 = X_c[X_c[:, -1] == 1]
+
+
+
+    # 300 represents number of points to make between T.min and T.max
+    xnew = np.linspace(X0[:, 0].min(), X0[:, 0].max(), 300)
+    spl = make_interp_spline(X0[:, 0], polyreg.predict(X0), k=3)  # type: BSpline
+    power_smooth = spl(xnew)
+    plt.plot(xnew, power_smooth, label="old accompaniment program")
+    xnew = np.linspace(X1[:, 0].min(), X1[:, 0].max(), 300)
+    spl = make_interp_spline(X1[:, 0], polyreg.predict(X1), k=3)  # type: BSpline
+    power_smooth = spl(xnew)
+    plt.plot(xnew, power_smooth, label="new accompaniment program")
+
+    # plt.plot(X0[:, 0], polyreg.predict(X0), c="blue", label="old accompaniment program")
+    # plt.plot(X1[:, 0], polyreg.predict(X1), c="orange", label="new accompaniment program")
+    plt.axvline(x=2013, linestyle='--', c="black", label="cut-off year")
+    plt.xlabel("Year of issued license")
+    plt.ylabel(f"{target_col} in 2019")
+    plt.title(f"Regression Discontinuity by Polynomial Regression w/ degree {degree}")
+    plt.legend()
     plt.savefig(f"PolynomialRegression_deg_{degree}_{target_col}.png")
     plt.show()
 
