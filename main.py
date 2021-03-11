@@ -1,7 +1,8 @@
-from models import local_linear_regression,mean_method, linear_regression, polynomial_regression, \
-    generalization_regression
-from utils import parse_data, clean_data
+from models import local_linear_regression, mean_method, linear_regression, polynomial_regression, \
+    generalization_regression, local_polynomial_regression
+from utils import parse_data, clean_data, optimal_bandwidth
 import pandas as pd
+import numpy as np
 
 
 def run_methods(df):
@@ -72,8 +73,15 @@ def run_methods(df):
                               degree=3)
 
     print(f"\n\n{'=' * 10}Non-Parametric Methods{'=' * 10}\n")
-    # Mean methods
-    delta = 3
+    # Mean method
+    grouped_df_to_func = grouped_df.copy()
+    grouped_df_to_func.reset_index(inplace=True)
+    grouped_df_to_func['date'] = grouped_df_to_func['date'].astype(int)
+    delta = optimal_bandwidth(grouped_df_to_func['num_accidents'],
+                              grouped_df_to_func['date'],
+                              cut=cutoff_license_year - 0.5)
+    delta = int(round(delta, 0))
+    print(f"Optimal bandwidth {delta} for num_accidents")
     grouped_df_delta = grouped_df.copy()
     grouped_df_delta.loc[:,'in_delta'] = 0
     grouped_df_delta.loc[[str(x) for x in range(cutoff_license_year - delta, cutoff_license_year + delta)], 'in_delta'] = 1
@@ -87,6 +95,16 @@ def run_methods(df):
                             min_license_year=min_license_year,
                             max_license_year=max_license_year,
                             delta=delta)
+
+    # Local poly regression
+    local_polynomial_regression(df=grouped_df_delta.copy(),
+                                target_col='num_accidents',
+                                delta=delta,
+                                y_max=y_max,
+                                min_license_year=min_license_year,
+                                max_license_year=max_license_year,
+                                degree=3,
+                                cutoff_date=cutoff_license_year - 0.5)
 
     # Normalization
     y_max = 0.16
@@ -113,6 +131,20 @@ def run_methods(df):
                               min_license_year=min_license_year,
                               max_license_year=max_license_year,
                               degree=3)
+
+    grouped_df_to_func = grouped_df.copy()
+    grouped_df_to_func.reset_index(inplace=True)
+    grouped_df_to_func['date'] = grouped_df_to_func['date'].astype(int)
+    delta = optimal_bandwidth(grouped_df_to_func['normalized_num_accidents'],
+                              grouped_df_to_func['date'],
+                              cut=cutoff_license_year - 0.5)
+    delta = int(round(delta, 0))
+    print(f"Optimal bandwidth {delta} for normalized_num_accidents")
+    grouped_df_delta = grouped_df.copy()
+    grouped_df_delta.loc[:, 'in_delta'] = 0
+    grouped_df_delta.loc[
+        [str(x) for x in range(cutoff_license_year - delta, cutoff_license_year + delta)], 'in_delta'] = 1
+    mean_method(df=grouped_df_delta.copy(), target_col='num_accidents')
     mean_method(df=grouped_df_delta.copy(), target_col='normalized_num_accidents')
     local_linear_regression(df=grouped_df_delta.copy(),
                             target_col='normalized_num_accidents',
@@ -121,6 +153,17 @@ def run_methods(df):
                             min_license_year=min_license_year,
                             max_license_year=max_license_year,
                             delta=delta)
+
+    # Local poly regression
+    local_polynomial_regression(df=grouped_df_delta.copy(),
+                                target_col='normalized_num_accidents',
+                                delta=delta,
+                                y_max=y_max,
+                                min_license_year=min_license_year,
+                                max_license_year=max_license_year,
+                                degree=3,
+                                cutoff_date=cutoff_license_year - 0.5)
+
 
 
 def run_discontinuity_assumption_check():

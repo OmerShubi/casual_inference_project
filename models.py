@@ -1,6 +1,3 @@
-import pandas as pd
-from datetime import datetime
-import os
 from scipy.stats import ttest_ind
 from sklearn.linear_model import LinearRegression
 import matplotlib.pyplot as plt
@@ -95,7 +92,7 @@ def polynomial_regression(df, target_col, cutoff_date, y_max, min_license_year,m
     plt.savefig(f"PolynomialRegression_deg_{degree}_{target_col}.png")
     plt.show()
 
-def generalization_regression(df, target_col, cutoff_date, y_max, min_license_year,max_license_year, degree=5):
+def generalization_regression(df, target_col, cutoff_date, y_max, min_license_year,max_license_year, degree=3):
     print(f"{'=' * 10}Generalization Polynomial Regression {degree} Method Results{'=' * 10}")
 
     df.reset_index(inplace=True)
@@ -168,7 +165,7 @@ def local_linear_regression(df, target_col, delta, y_max, min_license_year,max_l
     lr1 = LinearRegression()
     lr1.fit(X[t1_indices,0].reshape(-1,1), y[t1_indices], sample_weight[t1_indices])
 
-    print(f"Treatment effect on {target_col} is {lr1.coef_[0][0]-lr0.coef_[0][0]}")
+    print(f"Treatment effect on {target_col} is {lr1.intercept_[0]-lr0.intercept_[0]}")
 
     plt.scatter(X[:, 0] + cutoff_date, y, c="black")
     plt.xlim([min_license_year - 0.2, max_license_year + 0.2]) # 2005.8, 2018.2
@@ -186,4 +183,67 @@ def local_linear_regression(df, target_col, delta, y_max, min_license_year,max_l
     plt.title("RD by Local Linear Regression")
     plt.legend()
     plt.savefig(f"LocalLinerRegression_{target_col}.png")
+    plt.show()
+
+def local_polynomial_regression(df, target_col, delta, y_max, min_license_year,max_license_year, degree=3, cutoff_date=2013):
+    print(f"{'=' * 10}Local Polynomial Regression Method Results{'=' * 10}")
+
+    df.reset_index(inplace=True)
+    df['date'] = df['date'].astype(float)
+    df['date'] -= cutoff_date  # center
+    df = df[df['in_delta'] == 1]
+
+    X = df[["date", "treatment"]].astype(float).values
+    y = df[[target_col]].values
+    sample_weight = 1 - np.abs(df['date']) / delta
+
+    t0_indices = X[:,1] == 0
+    t1_indices = X[:,1] == 1
+
+    polyfeatures0 = PolynomialFeatures(degree, include_bias=False).fit_transform(X[t0_indices,0].reshape(-1,1))
+    polyfeatures1 = PolynomialFeatures(degree, include_bias=False).fit_transform(X[t1_indices,0].reshape(-1, 1))
+
+    polyreg0 = LinearRegression()
+    polyreg0.fit(polyfeatures0, y[t0_indices], sample_weight[t0_indices])
+    polyreg1 = LinearRegression()
+    polyreg1.fit(polyfeatures1, y[t1_indices], sample_weight[t1_indices])
+
+    print(f"Treatment effect on {target_col} is {polyreg1.intercept_[0]-polyreg0.intercept_[0]}")
+
+    plt.scatter(X[:, 0] + cutoff_date, y, c="black")
+    plt.xlim([min_license_year - 0.2, max_license_year + 0.2])  # 2005.8, 2018.2
+    plt.ylim([0, y_max])
+    cutoff_date_polyfeatures = np.zeros((1,degree))
+    X0 = np.concatenate([polyfeatures0, cutoff_date_polyfeatures])
+    X1 = np.concatenate([cutoff_date_polyfeatures, polyfeatures1])
+
+    k = 3 if delta >= 3 else 1
+
+    # 300 represents number of points to make between T.min and T.max
+    xnew = np.linspace(X0[:, 0].min(), X0[:, 0].max(), 300)
+    spl = make_interp_spline(X0[:, 0], polyreg0.predict(X0), k=k)  # type: BSpline
+    power_smooth = spl(xnew)
+    plt.plot(xnew + cutoff_date, power_smooth, label="old accompaniment program")
+    # xnew = np.linspace(X0.min(axis=0), X0.max(axis=0), 5)
+    # spl = make_interp_spline(xnew[:, 0], polyreg0.predict(xnew).squeeze(1), k=3)  # type: BSpline
+    # power_smooth = spl(xnew[:,0])
+    # plt.plot(xnew[:,0] + cutoff_date, power_smooth, label="old accompaniment program")
+
+    xnew = np.linspace(X1[:, 0].min(), X1[:, 0].max(), 300)
+    spl = make_interp_spline(X1[:, 0], polyreg1.predict(X1), k=k)  # type: BSpline
+    power_smooth = spl(xnew)
+    plt.plot(xnew + cutoff_date, power_smooth, label="new accompaniment program")
+    # xnew = np.linspace(X1.min(axis=0), X1.max(axis=0), 300)
+    # spl = make_interp_spline(xnew[:, 0], polyreg1.predict(xnew).squeeze(1), k=3)  # type: BSpline
+    # power_smooth = spl(xnew[:,0])
+    # plt.plot(xnew[:, 0] + cutoff_date, power_smooth, label="new accompaniment program")
+
+    # plt.plot(X0[:, 0], polyreg.predict(X0), c="blue", label="old accompaniment program")
+    # plt.plot(X1[:, 0], polyreg.predict(X1), c="orange", label="new accompaniment program")
+    plt.axvline(x=cutoff_date, linestyle='--', c="black", label="cut-off year")
+    plt.xlabel("Year of issued license")
+    plt.ylabel(f"{target_col} in 2019")
+    plt.title(f"RD by Polynomial Regression w/ degree {degree}")
+    plt.legend()
+    plt.savefig(f"LocalPolynomialRegression_deg_{degree}_{target_col}.png")
     plt.show()
