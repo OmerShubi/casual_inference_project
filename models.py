@@ -5,20 +5,6 @@ import numpy as np
 from scipy.interpolate import make_interp_spline, BSpline
 from sklearn.preprocessing import PolynomialFeatures
 
-def mean_method(df, target_col):
-    df_t0 = df.loc[(df['treatment'] == 0) & (df['in_delta'] == 1)]
-    df_t1 = df.loc[(df['treatment'] == 1) & (df['in_delta'] == 1)]
-    df_t0 = df_t0[target_col]
-    df_t1 = df_t1[target_col]
-    mean_0 = df_t0.mean()
-    mean_1 = df_t1.mean()
-    print(f"{'=' * 10}Mean Method Results{'=' * 10}")
-    print(f"Treatment effect on {target_col} is {mean_1 - mean_0}")
-    # result = ttest_ind(df_t0.values, df_t1.values)
-    # print(f"Two-sided T test: statistic {result[0]}, pvalue {result[1]}")
-    # result = ttest_ind(df_t0.values, df_t1.values, alternative="greater")
-    # print(f"One-sided T test: statistic {result[0]}, pvalue {result[1]}")
-
 def linear_regression(df, target_col, cutoff_date,y_max,min_license_year,max_license_year):
     print(f"{'=' * 10}Linear Regression Method Results{'=' * 10}")
 
@@ -28,7 +14,8 @@ def linear_regression(df, target_col, cutoff_date,y_max,min_license_year,max_lic
 
     lr = LinearRegression()
     lr.fit(X, y)
-    print(f"Treatment effect on {target_col} is {lr.coef_[0][1]}")
+    effect = lr.coef_[0][1]
+    print(f"Treatment effect on {target_col} is {effect}")
 
     plt.scatter(X[:, 0], y, c="black")
     plt.xlim([min_license_year - 0.2, max_license_year + 0.2]) # 2005.8, 2018.2
@@ -47,6 +34,8 @@ def linear_regression(df, target_col, cutoff_date,y_max,min_license_year,max_lic
     plt.savefig(f"LinerRegression_{target_col}.png")
     plt.show()
 
+    return effect
+
 def polynomial_regression(df, target_col, cutoff_date, y_max, min_license_year,max_license_year, degree=5):
     print(f"{'=' * 10}Polynomial Regression {degree} Method Results{'=' * 10}")
 
@@ -61,7 +50,8 @@ def polynomial_regression(df, target_col, cutoff_date, y_max, min_license_year,m
     polyreg = LinearRegression()
     polyreg.fit(X_c, y)
 
-    print(f"Treatment effect on {target_col} is {polyreg.coef_[0][-1]}")
+    effect = polyreg.coef_[0][-1]
+    print(f"Treatment effect on {target_col} is {effect}")
 
     plt.scatter(X[:, 0], y, c="black")
     plt.xlim([min_license_year - 0.2, max_license_year + 0.2])  # 2005.8, 2018.2
@@ -92,6 +82,8 @@ def polynomial_regression(df, target_col, cutoff_date, y_max, min_license_year,m
     plt.savefig(f"PolynomialRegression_deg_{degree}_{target_col}.png")
     plt.show()
 
+    return effect
+
 def generalization_regression(df, target_col, cutoff_date, y_max, min_license_year,max_license_year, degree=3):
     print(f"{'=' * 10}Generalization Polynomial Regression {degree} Method Results{'=' * 10}")
 
@@ -111,7 +103,8 @@ def generalization_regression(df, target_col, cutoff_date, y_max, min_license_ye
     polyreg = LinearRegression()
     polyreg.fit(X_c, y)
 
-    print(f"Treatment effect on {target_col} is {polyreg.coef_[0][-1]}")
+    effect = polyreg.coef_[0][-1]
+    print(f"Treatment effect on {target_col} is {effect}")
 
     plt.scatter(X[:, 0]+cutoff_date, y, c="black")
     plt.xlim([min_license_year - 0.2, max_license_year + 0.2]) # 2005.8, 2018.2
@@ -146,6 +139,24 @@ def generalization_regression(df, target_col, cutoff_date, y_max, min_license_ye
     plt.savefig(f"GeneralizationPolynomialRegression_deg_{degree}_{target_col}.png")
     plt.show()
 
+    return effect
+
+def mean_method(df, target_col):
+    df_t0 = df.loc[(df['treatment'] == 0) & (df['in_delta'] == 1)]
+    df_t1 = df.loc[(df['treatment'] == 1) & (df['in_delta'] == 1)]
+    df_t0 = df_t0[target_col]
+    df_t1 = df_t1[target_col]
+    mean_0 = df_t0.mean()
+    mean_1 = df_t1.mean()
+    print(f"{'=' * 10}Mean Method Results{'=' * 10}")
+    effect = mean_1 - mean_0
+    print(f"Treatment effect on {target_col} is {mean_1 - mean_0}")
+    return effect
+    # result = ttest_ind(df_t0.values, df_t1.values)
+    # print(f"Two-sided T test: statistic {result[0]}, pvalue {result[1]}")
+    # result = ttest_ind(df_t0.values, df_t1.values, alternative="greater")
+    # print(f"One-sided T test: statistic {result[0]}, pvalue {result[1]}")
+
 def local_linear_regression(df, target_col, delta, y_max, min_license_year,max_license_year, cutoff_date=2013):
     print(f"{'=' * 10}Local Linear Regression Method Results{'=' * 10}")
 
@@ -165,7 +176,8 @@ def local_linear_regression(df, target_col, delta, y_max, min_license_year,max_l
     lr1 = LinearRegression()
     lr1.fit(X[t1_indices,0].reshape(-1,1), y[t1_indices], sample_weight[t1_indices])
 
-    print(f"Treatment effect on {target_col} is {lr1.intercept_[0]-lr0.intercept_[0]}")
+    effect = lr1.intercept_[0]-lr0.intercept_[0]
+    print(f"Treatment effect on {target_col} is {effect}")
 
     plt.scatter(X[:, 0] + cutoff_date, y, c="black")
     plt.xlim([min_license_year - 0.2, max_license_year + 0.2]) # 2005.8, 2018.2
@@ -184,6 +196,8 @@ def local_linear_regression(df, target_col, delta, y_max, min_license_year,max_l
     plt.legend()
     plt.savefig(f"LocalLinerRegression_{target_col}.png")
     plt.show()
+
+    return effect
 
 def local_polynomial_regression(df, target_col, delta, y_max, min_license_year,max_license_year, degree=3, cutoff_date=2013):
     print(f"{'=' * 10}Local Polynomial Regression Method Results{'=' * 10}")
@@ -208,7 +222,8 @@ def local_polynomial_regression(df, target_col, delta, y_max, min_license_year,m
     polyreg1 = LinearRegression()
     polyreg1.fit(polyfeatures1, y[t1_indices], sample_weight[t1_indices])
 
-    print(f"Treatment effect on {target_col} is {polyreg1.intercept_[0]-polyreg0.intercept_[0]}")
+    effect = polyreg1.intercept_[0]-polyreg0.intercept_[0]
+    print(f"Treatment effect on {target_col} is {effect}")
 
     plt.scatter(X[:, 0] + cutoff_date, y, c="black")
     plt.xlim([min_license_year - 0.2, max_license_year + 0.2])  # 2005.8, 2018.2
@@ -247,3 +262,5 @@ def local_polynomial_regression(df, target_col, delta, y_max, min_license_year,m
     plt.legend()
     plt.savefig(f"LocalPolynomialRegression_deg_{degree}_{target_col}.png")
     plt.show()
+
+    return effect

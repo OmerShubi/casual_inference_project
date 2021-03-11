@@ -5,7 +5,7 @@ import pandas as pd
 import numpy as np
 
 
-def run_methods(df):
+def run_methods(df, methods,nmethods):
     """
 
     :param df:
@@ -19,8 +19,6 @@ def run_methods(df):
 
     # accidents that happened during accident_year
     target_df = df.loc[pd.date_range(start=f'{accident_year}-01-01', end=f'{accident_year}-12-31', freq="MS"), :]
-
-    # target_year_age_df = target_year_df.loc[:, "25-29"]
 
     # Sum over each year of license issue
     target_df_with_sum = pd.DataFrame(target_df.sum(axis=0), columns=['num_accidents']).sort_index()
@@ -47,7 +45,7 @@ def run_methods(df):
     max_license_year = 2018
 
     # linear regression all data
-    linear_regression(df=grouped_df.copy(),
+    lr_effect = linear_regression(df=grouped_df.copy(),
                       target_col='num_accidents',
                       cutoff_date=cutoff_license_year - 0.5,
                       y_max=y_max,
@@ -55,7 +53,7 @@ def run_methods(df):
                       max_license_year=max_license_year)
 
     # poly regression
-    polynomial_regression(df=grouped_df.copy(),
+    pr_effect = polynomial_regression(df=grouped_df.copy(),
                           target_col='num_accidents',
                           cutoff_date=cutoff_license_year - 0.5,
                           y_max=y_max,
@@ -64,7 +62,7 @@ def run_methods(df):
                           degree=3)
 
     # generalization poly regression
-    generalization_regression(df=grouped_df.copy(),
+    gn_effect = generalization_regression(df=grouped_df.copy(),
                               target_col='num_accidents',
                               cutoff_date=cutoff_license_year - 0.5,
                               y_max=y_max,
@@ -85,10 +83,10 @@ def run_methods(df):
     grouped_df_delta = grouped_df.copy()
     grouped_df_delta.loc[:,'in_delta'] = 0
     grouped_df_delta.loc[[str(x) for x in range(cutoff_license_year - delta, cutoff_license_year + delta)], 'in_delta'] = 1
-    mean_method(df=grouped_df_delta.copy(), target_col='num_accidents')
+    mean_effect = mean_method(df=grouped_df_delta.copy(), target_col='num_accidents')
 
     # Local linear regression
-    local_linear_regression(df=grouped_df_delta.copy(),
+    llr_effect = local_linear_regression(df=grouped_df_delta.copy(),
                             target_col='num_accidents',
                             cutoff_date=cutoff_license_year - 0.5,
                             y_max=y_max,
@@ -97,7 +95,7 @@ def run_methods(df):
                             delta=delta)
 
     # Local poly regression
-    local_polynomial_regression(df=grouped_df_delta.copy(),
+    lpr_effect = local_polynomial_regression(df=grouped_df_delta.copy(),
                                 target_col='num_accidents',
                                 delta=delta,
                                 y_max=y_max,
@@ -110,21 +108,21 @@ def run_methods(df):
     y_max = 0.16
 
     print(f"\n\n{'=' * 10}Normalization{'=' * 10}\n")
-    linear_regression(df=grouped_df.copy(),
+    nlr_effect = linear_regression(df=grouped_df.copy(),
                       target_col='normalized_num_accidents',
                       cutoff_date=cutoff_license_year - 0.5,
                       y_max=y_max,
                       min_license_year=min_license_year,
                       max_license_year=max_license_year,
                       )
-    polynomial_regression(df=grouped_df.copy(),
+    npr_effect = polynomial_regression(df=grouped_df.copy(),
                           target_col='normalized_num_accidents',
                           cutoff_date=cutoff_license_year - 0.5,
                           y_max=y_max,
                           min_license_year=min_license_year,
                           max_license_year=max_license_year,
                           degree=3)
-    generalization_regression(df=grouped_df.copy(),
+    ngn_effect = generalization_regression(df=grouped_df.copy(),
                               target_col='normalized_num_accidents',
                               cutoff_date=cutoff_license_year - 0.5,
                               y_max=y_max,
@@ -144,9 +142,8 @@ def run_methods(df):
     grouped_df_delta.loc[:, 'in_delta'] = 0
     grouped_df_delta.loc[
         [str(x) for x in range(cutoff_license_year - delta, cutoff_license_year + delta)], 'in_delta'] = 1
-    mean_method(df=grouped_df_delta.copy(), target_col='num_accidents')
-    mean_method(df=grouped_df_delta.copy(), target_col='normalized_num_accidents')
-    local_linear_regression(df=grouped_df_delta.copy(),
+    nmean_effect = mean_method(df=grouped_df_delta.copy(), target_col='normalized_num_accidents')
+    nllr_effect = local_linear_regression(df=grouped_df_delta.copy(),
                             target_col='normalized_num_accidents',
                             cutoff_date=cutoff_license_year - 0.5,
                             y_max=y_max,
@@ -155,7 +152,7 @@ def run_methods(df):
                             delta=delta)
 
     # Local poly regression
-    local_polynomial_regression(df=grouped_df_delta.copy(),
+    nlpr_effect = local_polynomial_regression(df=grouped_df_delta.copy(),
                                 target_col='normalized_num_accidents',
                                 delta=delta,
                                 y_max=y_max,
@@ -164,6 +161,14 @@ def run_methods(df):
                                 degree=3,
                                 cutoff_date=cutoff_license_year - 0.5)
 
+    # methods_effects = {k:eval(k) for k in methods.keys()}
+    methods_effects = {}
+    for k in methods.keys():
+        methods_effects[k] = eval(k)
+    nmethods_effects = {}
+    for k in nmethods.keys():
+        nmethods_effects[k] = eval(k)
+    return methods_effects, nmethods_effects
 
 
 def run_discontinuity_assumption_check():
@@ -184,5 +189,22 @@ if __name__ == '__main__':
     clean_df = clean_data(df, too_old_age=24)
     #
     # run_analysis()
-    #
-    run_methods(clean_df)
+    methods = {"lr_effect": "linear regression",
+               "pr_effect": "polynomial regression",
+               "gn_effect": "generalization regression",
+               "mean_effect": "Mean",
+               "llr_effect": "local linear regression",
+               "lpr_effect": "local polynomial regression"}
+    nmethods = {f"n{k}": f"Normalized {v}" for k, v in methods.items()}
+    methods_effects, nmethods_effects = run_methods(clean_df.copy(), methods.copy(), nmethods.copy())
+    df = {'Treatment Effect': [round(v, 3) for v in methods_effects.values()],
+          'Normalized Treatment Effect':[round(v, 3) for v in nmethods_effects.values()]}
+    df = pd.DataFrame(df,
+                      index=[methods[k] for k in methods_effects.keys()],
+                      columns=["Treatment Effect", "Normalized Treatment Effect"])
+    df.rename_axis('Method', inplace=True)
+    print(f"\n\n{'=' * 10}Treatment Effects{'=' * 10}")
+    print(df)
+    df.to_csv("results.csv")
+
+
