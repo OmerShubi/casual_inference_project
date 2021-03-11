@@ -1,4 +1,6 @@
-from utils import parse_data, mean_method, linear_regression, clean_data, polynomial_regression
+from models import local_linear_regression,mean_method, linear_regression, polynomial_regression, \
+    generalization_regression
+from utils import parse_data, clean_data
 import pandas as pd
 
 
@@ -36,23 +38,62 @@ def run_methods(df):
                    'num_issued_licenses_per_year'] = x[(x.index >= min_license_year) & (x.index <= max_license_year)].values
     grouped_df['normalized_num_accidents'] = (grouped_df['num_accidents'] / grouped_df['num_issued_licenses_per_year']) * 100
 
+    print(f"{'=' * 10}Parametric Methods{'=' * 10}\n")
+
     # linear regression all data
-    linear_regression(grouped_df.copy(), target_col='num_accidents')
-    linear_regression(grouped_df.copy(), target_col='normalized_num_accidents')
+    linear_regression(df=grouped_df.copy(),
+                      target_col='num_accidents',
+                      cutoff_date=cutoff_license_year - 0.5)
 
-    # poly
-    polynomial_regression(grouped_df.copy(), target_col='num_accidents', degree=3)
-    polynomial_regression(grouped_df.copy(), target_col='normalized_num_accidents', degree=3)
+    # poly regression
+    polynomial_regression(df=grouped_df.copy(),
+                          target_col='num_accidents',
+                          cutoff_date=cutoff_license_year - 0.5,
+                          degree=3)
 
+    # generalization poly regression
+    generalization_regression(df=grouped_df.copy(),
+                              target_col='num_accidents',
+                              cutoff_date=cutoff_license_year - 0.5,
+                              degree=3)
+
+    print(f"\n\n{'=' * 10}Non-Parametric Methods{'=' * 10}\n")
+    # Mean methods
     delta = 3
-    grouped_df.loc[:,'in_delta'] = 0
-    grouped_df.loc[[str(x) for x in range(cutoff_license_year - delta, cutoff_license_year + delta)], 'in_delta'] = 1
+    grouped_df_delta = grouped_df.copy()
+    grouped_df_delta.loc[:,'in_delta'] = 0
+    grouped_df_delta.loc[[str(x) for x in range(cutoff_license_year - delta, cutoff_license_year + delta)], 'in_delta'] = 1
+    mean_method(df=grouped_df_delta.copy(), target_col='num_accidents')
+
+    # Local linear regression
+    local_linear_regression(df=grouped_df_delta.copy(),
+                            target_col='num_accidents',
+                            cutoff_date=cutoff_license_year - 0.5,
+                            delta=delta)
+
+    # Normalization
+    print(f"\n\n{'=' * 10}Normalization{'=' * 10}\n")
+    linear_regression(df=grouped_df.copy(),
+                      target_col='normalized_num_accidents',
+                      cutoff_date=cutoff_license_year - 0.5)
+    polynomial_regression(df=grouped_df.copy(),
+                          target_col='normalized_num_accidents',
+                          cutoff_date=cutoff_license_year - 0.5,
+                          degree=3)
+    generalization_regression(df=grouped_df.copy(),
+                              target_col='normalized_num_accidents',
+                              cutoff_date=cutoff_license_year - 0.5,
+                              degree=3)
+    mean_method(df=grouped_df_delta.copy(), target_col='normalized_num_accidents')
+    local_linear_regression(df=grouped_df_delta.copy(),
+                            target_col='normalized_num_accidents',
+                            cutoff_date=cutoff_license_year - 0.5,
+                            delta=delta)
 
 
-    # Method 1
-    mean_method(grouped_df, col_name='num_accidents')
-    mean_method(grouped_df, col_name='normalized_num_accidents')
-
+def run_discontinuity_assumption_check():
+    # Run methods on different age range -> see no effect.
+    pass
 
 def run_analysis():
     """
