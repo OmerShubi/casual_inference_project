@@ -40,21 +40,35 @@ def run_methods(df):
 
     print(f"{'=' * 10}Parametric Methods{'=' * 10}\n")
 
+    # No normalization
+    y_max = 250
+    min_license_year = 2006
+    max_license_year = 2018
+
     # linear regression all data
     linear_regression(df=grouped_df.copy(),
                       target_col='num_accidents',
-                      cutoff_date=cutoff_license_year - 0.5)
+                      cutoff_date=cutoff_license_year - 0.5,
+                      y_max=y_max,
+                      min_license_year=min_license_year,
+                      max_license_year=max_license_year)
 
     # poly regression
     polynomial_regression(df=grouped_df.copy(),
                           target_col='num_accidents',
                           cutoff_date=cutoff_license_year - 0.5,
+                          y_max=y_max,
+                          min_license_year=min_license_year,
+                          max_license_year=max_license_year,
                           degree=3)
 
     # generalization poly regression
     generalization_regression(df=grouped_df.copy(),
                               target_col='num_accidents',
                               cutoff_date=cutoff_license_year - 0.5,
+                              y_max=y_max,
+                              min_license_year=min_license_year,
+                              max_license_year=max_license_year,
                               degree=3)
 
     print(f"\n\n{'=' * 10}Non-Parametric Methods{'=' * 10}\n")
@@ -69,25 +83,43 @@ def run_methods(df):
     local_linear_regression(df=grouped_df_delta.copy(),
                             target_col='num_accidents',
                             cutoff_date=cutoff_license_year - 0.5,
+                            y_max=y_max,
+                            min_license_year=min_license_year,
+                            max_license_year=max_license_year,
                             delta=delta)
 
     # Normalization
+    y_max = 0.16
+
     print(f"\n\n{'=' * 10}Normalization{'=' * 10}\n")
     linear_regression(df=grouped_df.copy(),
                       target_col='normalized_num_accidents',
-                      cutoff_date=cutoff_license_year - 0.5)
+                      cutoff_date=cutoff_license_year - 0.5,
+                      y_max=y_max,
+                      min_license_year=min_license_year,
+                      max_license_year=max_license_year,
+                      )
     polynomial_regression(df=grouped_df.copy(),
                           target_col='normalized_num_accidents',
                           cutoff_date=cutoff_license_year - 0.5,
+                          y_max=y_max,
+                          min_license_year=min_license_year,
+                          max_license_year=max_license_year,
                           degree=3)
     generalization_regression(df=grouped_df.copy(),
                               target_col='normalized_num_accidents',
                               cutoff_date=cutoff_license_year - 0.5,
+                              y_max=y_max,
+                              min_license_year=min_license_year,
+                              max_license_year=max_license_year,
                               degree=3)
     mean_method(df=grouped_df_delta.copy(), target_col='normalized_num_accidents')
     local_linear_regression(df=grouped_df_delta.copy(),
                             target_col='normalized_num_accidents',
                             cutoff_date=cutoff_license_year - 0.5,
+                            y_max=y_max,
+                            min_license_year=min_license_year,
+                            max_license_year=max_license_year,
                             delta=delta)
 
 

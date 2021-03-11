@@ -22,7 +22,7 @@ def mean_method(df, target_col):
     # result = ttest_ind(df_t0.values, df_t1.values, alternative="greater")
     # print(f"One-sided T test: statistic {result[0]}, pvalue {result[1]}")
 
-def linear_regression(df, target_col, cutoff_date):
+def linear_regression(df, target_col, cutoff_date,y_max,min_license_year,max_license_year):
     print(f"{'=' * 10}Linear Regression Method Results{'=' * 10}")
 
     df.reset_index(inplace=True)
@@ -34,8 +34,8 @@ def linear_regression(df, target_col, cutoff_date):
     print(f"Treatment effect on {target_col} is {lr.coef_[0][1]}")
 
     plt.scatter(X[:, 0], y, c="black")
-    plt.xlim([2005.8, 2018.2])
-    plt.ylim(0)
+    plt.xlim([min_license_year - 0.2, max_license_year + 0.2]) # 2005.8, 2018.2
+    plt.ylim([0,y_max])
     X0 = df[df["treatment"] == 0][["date", "treatment"]].astype(int).values
     X0 = np.concatenate([X0, [[cutoff_date,0]]])
     X1 = df[df["treatment"] == 1][["date", "treatment"]].astype(int).values
@@ -45,12 +45,12 @@ def linear_regression(df, target_col, cutoff_date):
     plt.axvline(x=cutoff_date, linestyle='--', c="black", label="cut-off year")
     plt.xlabel("Year of issued license")
     plt.ylabel(f"{target_col} in 2019")
-    plt.title("Regression Discontinuity by Linear Regression")
+    plt.title("RD by Linear Regression")
     plt.legend()
     plt.savefig(f"LinerRegression_{target_col}.png")
     plt.show()
 
-def polynomial_regression(df, target_col, cutoff_date, degree=5):
+def polynomial_regression(df, target_col, cutoff_date, y_max, min_license_year,max_license_year, degree=5):
     print(f"{'=' * 10}Polynomial Regression {degree} Method Results{'=' * 10}")
 
     df.reset_index(inplace=True)
@@ -67,8 +67,8 @@ def polynomial_regression(df, target_col, cutoff_date, degree=5):
     print(f"Treatment effect on {target_col} is {polyreg.coef_[0][-1]}")
 
     plt.scatter(X[:, 0], y, c="black")
-    plt.xlim([2005.8, 2018.2])
-    plt.ylim(0)
+    plt.xlim([min_license_year - 0.2, max_license_year + 0.2])  # 2005.8, 2018.2
+    plt.ylim([0,y_max])
     X0 = X_c[X_c[:, -1] == 0]
     cutoff_date_polyfeatures = PolynomialFeatures(degree, include_bias=False).fit_transform(np.array([cutoff_date]).reshape(-1,1))
     X0 = np.concatenate([X0, [list(cutoff_date_polyfeatures[0])+[0]]])
@@ -90,12 +90,12 @@ def polynomial_regression(df, target_col, cutoff_date, degree=5):
     plt.axvline(x=cutoff_date, linestyle='--', c="black", label="cut-off year")
     plt.xlabel("Year of issued license")
     plt.ylabel(f"{target_col} in 2019")
-    plt.title(f"Regression Discontinuity by Polynomial Regression w/ degree {degree}")
+    plt.title(f"RD by Polynomial Regression w/ degree {degree}")
     plt.legend()
     plt.savefig(f"PolynomialRegression_deg_{degree}_{target_col}.png")
     plt.show()
 
-def generalization_regression(df, target_col, cutoff_date, degree=5):
+def generalization_regression(df, target_col, cutoff_date, y_max, min_license_year,max_license_year, degree=5):
     print(f"{'=' * 10}Generalization Polynomial Regression {degree} Method Results{'=' * 10}")
 
     df.reset_index(inplace=True)
@@ -117,8 +117,8 @@ def generalization_regression(df, target_col, cutoff_date, degree=5):
     print(f"Treatment effect on {target_col} is {polyreg.coef_[0][-1]}")
 
     plt.scatter(X[:, 0]+cutoff_date, y, c="black")
-    plt.xlim([2005.8, 2018.2])
-    plt.ylim(0)
+    plt.xlim([min_license_year - 0.2, max_license_year + 0.2]) # 2005.8, 2018.2
+    plt.ylim([0,y_max])
     X0 = X_c[X_c[:, -1] == 0]
     cutoff_date_polyfeatures_zeros = np.zeros((1,degree))#PolynomialFeatures(degree, include_bias=False).fit_transform(np.array([0]).reshape(-1, 1))
     cutoff_date_polyfeatures0 = np.concatenate([cutoff_date_polyfeatures_zeros, cutoff_date_polyfeatures_zeros, np.array([[0]])], axis=1)
@@ -144,40 +144,46 @@ def generalization_regression(df, target_col, cutoff_date, degree=5):
     plt.axvline(x=cutoff_date, linestyle='--', c="black", label="cut-off year")
     plt.xlabel("Year of issued license")
     plt.ylabel(f"{target_col} in 2019")
-    plt.title(f"Regression Discontinuity by Generalization Polynomial Regression w/ degree {degree}")
+    plt.title(f"RD by Generalization Polynomial Regression w/ degree {degree}")
     plt.legend()
     plt.savefig(f"GeneralizationPolynomialRegression_deg_{degree}_{target_col}.png")
     plt.show()
 
-def local_linear_regression(df, target_col, delta, cutoff_date=2013):
+def local_linear_regression(df, target_col, delta, y_max, min_license_year,max_license_year, cutoff_date=2013):
     print(f"{'=' * 10}Local Linear Regression Method Results{'=' * 10}")
 
     df.reset_index(inplace=True)
     df['date'] = df['date'].astype(float)
     df['date'] -= cutoff_date  # center
     df = df[df['in_delta'] == 1]
+
     X = df[["date", "treatment"]].astype(float).values
     y = df[[target_col]].values
     sample_weight = 1 - np.abs(df['date'])/delta
 
-    lr = LinearRegression()
-    lr.fit(X, y, sample_weight)
-    print(f"Treatment effect on {target_col} is {lr.coef_[0][1]}")
+    t0_indices = X[:,1] == 0
+    t1_indices = X[:,1] == 1
+    lr0 = LinearRegression()
+    lr0.fit(X[t0_indices,0].reshape(-1,1), y[t0_indices], sample_weight[t0_indices])
+    lr1 = LinearRegression()
+    lr1.fit(X[t1_indices,0].reshape(-1,1), y[t1_indices], sample_weight[t1_indices])
+
+    print(f"Treatment effect on {target_col} is {lr1.coef_[0][0]-lr0.coef_[0][0]}")
 
     plt.scatter(X[:, 0] + cutoff_date, y, c="black")
-    plt.xlim([2005.8, 2018.2])
-    plt.ylim(0)
+    plt.xlim([min_license_year - 0.2, max_license_year + 0.2]) # 2005.8, 2018.2
+    plt.ylim([0,y_max])
     X0 = df[df["treatment"] == 0][["date", "treatment"]].astype(float).values
     X0 = np.concatenate([X0, [[0, 0]]])
     X1 = df[df["treatment"] == 1][["date", "treatment"]].astype(float).values
     X1 = np.concatenate([[[0, 1]], X1])
 
-    plt.plot(X0[:, 0] + cutoff_date, lr.predict(X0), c="blue", label="old accompaniment program")
-    plt.plot(X1[:, 0] + cutoff_date, lr.predict(X1), c="orange", label="new accompaniment program")
+    plt.plot(X0[:, 0] + cutoff_date, lr0.predict(X0[:, 0].reshape(-1,1)), c="blue", label="old accompaniment program")
+    plt.plot(X1[:, 0] + cutoff_date, lr1.predict(X1[:, 0].reshape(-1,1)), c="orange", label="new accompaniment program")
     plt.axvline(x=cutoff_date, linestyle='--', c="black", label="cut-off year")
     plt.xlabel("Year of issued license")
     plt.ylabel(f"{target_col} in 2019")
-    plt.title("Regression Discontinuity by Local Linear Regression")
+    plt.title("RD by Local Linear Regression")
     plt.legend()
     plt.savefig(f"LocalLinerRegression_{target_col}.png")
     plt.show()
