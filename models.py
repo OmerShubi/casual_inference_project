@@ -31,7 +31,7 @@ def linear_regression(df, target_col, cutoff_date,y_max,min_license_year,max_lic
     plt.ylabel(f"{target_col} in 2019")
     plt.title("RD by Linear Regression")
     plt.legend()
-    plt.savefig(f"LinerRegression_{target_col}.png")
+    plt.savefig(f"results/LinerRegression_{target_col}.png")
     plt.show()
 
     return effect
@@ -79,7 +79,7 @@ def polynomial_regression(df, target_col, cutoff_date, y_max, min_license_year,m
     plt.ylabel(f"{target_col} in 2019")
     plt.title(f"RD by Polynomial Regression w/ degree {degree}")
     plt.legend()
-    plt.savefig(f"PolynomialRegression_deg_{degree}_{target_col}.png")
+    plt.savefig(f"results/PolynomialRegression_deg_{degree}_{target_col}.png")
     plt.show()
 
     return effect
@@ -136,7 +136,7 @@ def generalization_regression(df, target_col, cutoff_date, y_max, min_license_ye
     plt.ylabel(f"{target_col} in 2019")
     plt.title(f"RD by Generalization Polynomial Regression w/ degree {degree}")
     plt.legend()
-    plt.savefig(f"GeneralizationPolynomialRegression_deg_{degree}_{target_col}.png")
+    plt.savefig(f"results/GeneralizationPolynomialRegression_deg_{degree}_{target_col}.png")
     plt.show()
 
     return effect
@@ -194,7 +194,7 @@ def local_linear_regression(df, target_col, delta, y_max, min_license_year,max_l
     plt.ylabel(f"{target_col} in 2019")
     plt.title("RD by Local Linear Regression")
     plt.legend()
-    plt.savefig(f"LocalLinerRegression_{target_col}.png")
+    plt.savefig(f"results/LocalLinerRegression_{target_col}.png")
     plt.show()
 
     return effect
@@ -260,7 +260,7 @@ def local_polynomial_regression(df, target_col, delta, y_max, min_license_year,m
     plt.ylabel(f"{target_col} in 2019")
     plt.title(f"RD by Polynomial Regression w/ degree {degree}")
     plt.legend()
-    plt.savefig(f"LocalPolynomialRegression_deg_{degree}_{target_col}.png")
+    plt.savefig(f"results/LocalPolynomialRegression_deg_{degree}_{target_col}.png")
     plt.show()
 
     return effect
