@@ -1,10 +1,11 @@
 from models import local_linear_regression, mean_method, linear_regression, polynomial_regression, \
     generalization_regression, local_polynomial_regression
-from statistics import bar_plot, creat_year_of_license_for_each_age_table, create_genral_statistic
+from statistics import nice_plot, creat_year_of_license_for_each_age_table, create_genral_statistic
 from utils import parse_data, clean_data, optimal_bandwidth
 import pandas as pd
 import numpy as np
-
+import os
+import matplotlib.pyplot as plt
 
 def run_methods(df, methods,nmethods, num_issued_licenses_per_year, min_license_year=2006, max_license_year=2018,\
                 cutoff_license_year=2013, accident_year=2019, y_max_no_normalization = 250, y_max_normalization = 0.16):
@@ -171,17 +172,43 @@ def run_discontinuity_assumption_check():
     # Run methods on different age range -> see no effect.
     pass
 
-def run_analysis(df_main, df_num_issued_licenses_per_year, min_license_year=2006, max_license_year=2018,\
+def run_analysis(df_main, df_num_issued_licenses_per_year, df_full, min_license_year=2006, max_license_year=2018,\
                  accident_year=2019):
     """
 
     :return:
     """
-    bar_plot(df=df_num_issued_licenses_per_year.reset_index(),
-             x_column='year_of_issue_license',
-             y_column='num_drivers',
-             title='licensed to drive in 2019 by year licensed were issued, among young drivers',
-             save_fig="LicensedToDrive")
+    ############ FULL DATA ##############
+
+    ###### Range of licnse issue year per age group
+    target_df_with_sum_full = pd.DataFrame(df_full.sum(axis=0), columns=['num_accidents']).sort_index()
+
+    target_year_df_with_sum_full = target_df_with_sum_full.loc[
+                              (slice(None), [str(x) for x in range(0, 3000)]),
+                              :].copy(deep=True)
+    target_year_df_with_sum_full = target_year_df_with_sum_full.swaplevel()
+    target_year_df_with_sum_full.rename_axis(['date', 'age'], inplace=True)
+
+    creat_year_of_license_for_each_age_table(target_year_df_with_sum_full, name='full')
+
+    ###### Num accidents per age group
+    num_accidents_per_age=target_year_df_with_sum_full.groupby(level=1).sum()
+    nice_plot(num_accidents_per_age,
+              x_column=None,
+              y_column='num_accidents',
+              title='Num accidents per age group',
+              plot_type='bar', save_fig='num_accidents_per_age_group')
+    ###### Num accidents per year
+    num_accidents_per_year=target_year_df_with_sum_full.groupby(level=0).sum()
+    nice_plot(num_accidents_per_year,
+              x_column=None,
+              y_column='num_accidents',
+              title='Num accidents per year',
+              plot_type='line', save_fig='num_accidents_per_year')
+    ############ CLEAN DATA ##############
+
+    nice_plot(df=df_num_issued_licenses_per_year.reset_index(), x_column='year_of_issue_license', y_column='num_drivers',
+              title='licensed to drive in 2019 by year licensed were issued, among young drivers', save_fig="LicensedToDrive")
     # prepare data
 
     # accidents that happened during accident_year
@@ -196,7 +223,7 @@ def run_analysis(df_main, df_num_issued_licenses_per_year, min_license_year=2006
     target_year_df_with_sum = target_year_df_with_sum.swaplevel()
     target_year_df_with_sum.rename_axis(['date', 'age'], inplace=True)
 
-    creat_year_of_license_for_each_age_table(target_year_df_with_sum)
+    creat_year_of_license_for_each_age_table(target_year_df_with_sum, name='clean')
 
     create_genral_statistic(target_year_df_with_sum)
 
@@ -205,8 +232,9 @@ def run_analysis(df_main, df_num_issued_licenses_per_year, min_license_year=2006
     # number of accidents due to range age, aggregate all months, years of the accidents, aggregate all issued license
     #
 
-
 if __name__ == '__main__':
+    os.makedirs('results', exist_ok=True)
+    os.makedirs('analysis', exist_ok=True)
     min_license_year = 2006
     max_license_year = 2018
     cutoff_license_year = 2013
@@ -215,6 +243,7 @@ if __name__ == '__main__':
     y_max_normalization = 0.16
     parsed_data_path = "parsed_data.xlsx"
     df = parse_data(parsed_data_path=parsed_data_path)
+
     clean_df = clean_data(df, too_old_age=24)
     num_issued_licenses_per_year = pd.read_excel('num_issued_licenses_per_year.xlsx',
                                                  index_col=0,
@@ -222,7 +251,7 @@ if __name__ == '__main__':
                                                  usecols=[0,1],
                                                  names=["year_of_issue_license", "num_drivers"]).sort_index()
     #
-    run_analysis(clean_df, num_issued_licenses_per_year)
+    run_analysis(clean_df, num_issued_licenses_per_year, df_full=df)
     # methods = {"lr_effect": "linear regression",
     #            "pr_effect": "polynomial regression",
     #            "gn_effect": "generalization regression",
