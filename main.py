@@ -1,6 +1,6 @@
 from models import local_linear_regression, mean_method, linear_regression, polynomial_regression, \
     generalization_regression, local_polynomial_regression
-from statistics import nice_plot, creat_year_of_license_for_each_age_table, create_genral_statistic
+from statistics import nice_plot, creat_year_of_license_for_each_age_table
 from utils import parse_data, clean_data, optimal_bandwidth
 import pandas as pd
 import numpy as np
@@ -196,15 +196,17 @@ def run_analysis(df_main, df_num_issued_licenses_per_year, df_full, min_license_
     nice_plot(num_accidents_per_age,
               x_column=None,
               y_column='num_accidents',
-              title='Num accidents per age group',
+              title='Number of drivers involved in accidents per age group',
               plot_type='bar', save_fig='num_accidents_per_age_group')
+
     ###### Num accidents per year
-    num_accidents_per_year=target_year_df_with_sum_full.groupby(level=0).sum()
+    num_accidents_per_year=df_full.groupby(axis=1, level=1).sum().sum(axis=1)
     nice_plot(num_accidents_per_year,
               x_column=None,
-              y_column='num_accidents',
-              title='Num accidents per year',
-              plot_type='line', save_fig='num_accidents_per_year')
+              y_column=None,
+              title='Number of drivers involved in accidents per year',
+              plot_type='line', save_fig='num_accidents_per_year',
+              rot=0)
     ############ CLEAN DATA ##############
 
     nice_plot(df=df_num_issued_licenses_per_year.reset_index(), x_column='year_of_issue_license', y_column='num_drivers',
@@ -225,10 +227,16 @@ def run_analysis(df_main, df_num_issued_licenses_per_year, df_full, min_license_
 
     creat_year_of_license_for_each_age_table(target_year_df_with_sum, name='clean')
 
-    create_genral_statistic(target_year_df_with_sum)
 
+    nice_plot(target_year_df_with_sum.unstack(),
+              x_column=None,
+              y_column=None,
+              title='Number of drivers involved in accidents per license issued year',
+              plot_type='bar', save_fig='num_young_drivers_per_issue_year',
+              rot=45,
+              legend=['15-19', '20-24', '25-29', '30-34'],
+              width=1.2)
 
-    pass
     # number of accidents due to range age, aggregate all months, years of the accidents, aggregate all issued license
     #
 
