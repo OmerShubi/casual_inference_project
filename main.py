@@ -20,7 +20,7 @@ def run_methods(df, methods,nmethods, num_issued_licenses_per_year, min_license_
     target_df = df.loc[pd.date_range(start=f'{accident_year}-01-01', end=f'{accident_year}-12-31', freq="MS"), :]
 
     # Sum over each year of license issue
-    target_df_with_sum = pd.DataFrame(target_df.sum(axis=0), columns=['num_accidents']).sort_index()
+    target_df_with_sum = pd.DataFrame(target_df.sum(axis=0), columns=['number_of_accidents']).sort_index()
 
     target_year_df_with_sum = target_df_with_sum.loc[(slice(None), [str(x) for x in range(min_license_year, max_license_year + 1)]),
                               :].copy(deep=True)
@@ -35,7 +35,7 @@ def run_methods(df, methods,nmethods, num_issued_licenses_per_year, min_license_
     x = num_issued_licenses_per_year
     grouped_df.loc[(grouped_df.index >= str(min_license_year)) & (grouped_df.index <= str(max_license_year)),
                    'num_issued_licenses_per_year'] = x[(x.index >= min_license_year) & (x.index <= max_license_year)].values
-    grouped_df['normalized_num_accidents'] = (grouped_df['num_accidents'] / grouped_df['num_issued_licenses_per_year']) * 100
+    grouped_df['normalized_number_of_accidents'] = (grouped_df['number_of_accidents'] / grouped_df['num_issued_licenses_per_year'])*factor
 
     print(f"{'=' * 10}Parametric Methods{'=' * 10}\n")
 
@@ -44,7 +44,7 @@ def run_methods(df, methods,nmethods, num_issued_licenses_per_year, min_license_
 
     # linear regression all data
     lr_effect = linear_regression(df=grouped_df.copy(),
-                      target_col='num_accidents',
+                      target_col='number_of_accidents',
                       cutoff_date=cutoff_license_year - 0.5,
                       y_max=y_max,
                       min_license_year=min_license_year,
@@ -52,7 +52,7 @@ def run_methods(df, methods,nmethods, num_issued_licenses_per_year, min_license_
 
     # poly regression
     pr_effect = polynomial_regression(df=grouped_df.copy(),
-                          target_col='num_accidents',
+                          target_col='number_of_accidents',
                           cutoff_date=cutoff_license_year - 0.5,
                           y_max=y_max,
                           min_license_year=min_license_year,
@@ -61,7 +61,7 @@ def run_methods(df, methods,nmethods, num_issued_licenses_per_year, min_license_
 
     # generalization poly regression
     gn_effect = generalization_regression(df=grouped_df.copy(),
-                              target_col='num_accidents',
+                              target_col='number_of_accidents',
                               cutoff_date=cutoff_license_year - 0.5,
                               y_max=y_max,
                               min_license_year=min_license_year,
@@ -73,19 +73,19 @@ def run_methods(df, methods,nmethods, num_issued_licenses_per_year, min_license_
     grouped_df_to_func = grouped_df.copy()
     grouped_df_to_func.reset_index(inplace=True)
     grouped_df_to_func['date'] = grouped_df_to_func['date'].astype(int)
-    delta = optimal_bandwidth(grouped_df_to_func['num_accidents'],
+    delta = optimal_bandwidth(grouped_df_to_func['number_of_accidents'],
                               grouped_df_to_func['date'],
                               cut=cutoff_license_year - 0.5)
     delta = int(round(delta, 0))
-    print(f"Optimal bandwidth {delta} for num_accidents")
+    print(f"Optimal bandwidth {delta} for number_of_accidents")
     grouped_df_delta = grouped_df.copy()
     grouped_df_delta.loc[:,'in_delta'] = 0
     grouped_df_delta.loc[[str(x) for x in range(cutoff_license_year - delta, cutoff_license_year + delta)], 'in_delta'] = 1
-    mean_effect = mean_method(df=grouped_df_delta.copy(), target_col='num_accidents')
+    mean_effect = mean_method(df=grouped_df_delta.copy(), target_col='number_of_accidents')
 
     # Local linear regression
     llr_effect = local_linear_regression(df=grouped_df_delta.copy(),
-                            target_col='num_accidents',
+                            target_col='number_of_accidents',
                             cutoff_date=cutoff_license_year - 0.5,
                             y_max=y_max,
                             min_license_year=min_license_year,
@@ -94,12 +94,12 @@ def run_methods(df, methods,nmethods, num_issued_licenses_per_year, min_license_
 
     # Local poly regression
     lpr_effect = local_polynomial_regression(df=grouped_df_delta.copy(),
-                                target_col='num_accidents',
+                                target_col='number_of_accidents',
                                 delta=delta,
                                 y_max=y_max,
                                 min_license_year=min_license_year,
                                 max_license_year=max_license_year,
-                                degree=3,
+                                degree=2,
                                 cutoff_date=cutoff_license_year - 0.5)
 
     # Normalization
@@ -107,21 +107,21 @@ def run_methods(df, methods,nmethods, num_issued_licenses_per_year, min_license_
 
     print(f"\n\n{'=' * 10}Normalization{'=' * 10}\n")
     nlr_effect = linear_regression(df=grouped_df.copy(),
-                      target_col='normalized_num_accidents',
+                      target_col='normalized_number_of_accidents',
                       cutoff_date=cutoff_license_year - 0.5,
                       y_max=y_max,
                       min_license_year=min_license_year,
                       max_license_year=max_license_year,
                       )
     npr_effect = polynomial_regression(df=grouped_df.copy(),
-                          target_col='normalized_num_accidents',
+                          target_col='normalized_number_of_accidents',
                           cutoff_date=cutoff_license_year - 0.5,
                           y_max=y_max,
                           min_license_year=min_license_year,
                           max_license_year=max_license_year,
                           degree=3)
     ngn_effect = generalization_regression(df=grouped_df.copy(),
-                              target_col='normalized_num_accidents',
+                              target_col='normalized_number_of_accidents',
                               cutoff_date=cutoff_license_year - 0.5,
                               y_max=y_max,
                               min_license_year=min_license_year,
@@ -131,18 +131,18 @@ def run_methods(df, methods,nmethods, num_issued_licenses_per_year, min_license_
     grouped_df_to_func = grouped_df.copy()
     grouped_df_to_func.reset_index(inplace=True)
     grouped_df_to_func['date'] = grouped_df_to_func['date'].astype(int)
-    delta = optimal_bandwidth(grouped_df_to_func['normalized_num_accidents'],
+    delta = optimal_bandwidth(grouped_df_to_func['normalized_number_of_accidents'],
                               grouped_df_to_func['date'],
                               cut=cutoff_license_year - 0.5)
     delta = int(round(delta, 0))
-    print(f"Optimal bandwidth {delta} for normalized_num_accidents")
+    print(f"Optimal bandwidth {delta} for normalized_number_of_accidents")
     grouped_df_delta = grouped_df.copy()
     grouped_df_delta.loc[:, 'in_delta'] = 0
     grouped_df_delta.loc[
         [str(x) for x in range(cutoff_license_year - delta, cutoff_license_year + delta)], 'in_delta'] = 1
-    nmean_effect = mean_method(df=grouped_df_delta.copy(), target_col='normalized_num_accidents')
+    nmean_effect = mean_method(df=grouped_df_delta.copy(), target_col='normalized_number_of_accidents')
     nllr_effect = local_linear_regression(df=grouped_df_delta.copy(),
-                            target_col='normalized_num_accidents',
+                            target_col='normalized_number_of_accidents',
                             cutoff_date=cutoff_license_year - 0.5,
                             y_max=y_max,
                             min_license_year=min_license_year,
@@ -151,12 +151,12 @@ def run_methods(df, methods,nmethods, num_issued_licenses_per_year, min_license_
 
     # Local poly regression
     nlpr_effect = local_polynomial_regression(df=grouped_df_delta.copy(),
-                                target_col='normalized_num_accidents',
+                                target_col='normalized_number_of_accidents',
                                 delta=delta,
                                 y_max=y_max,
                                 min_license_year=min_license_year,
                                 max_license_year=max_license_year,
-                                degree=3,
+                                degree=2,
                                 cutoff_date=cutoff_license_year - 0.5)
 
     # methods_effects = {k:eval(k) for k in methods.keys()}
@@ -181,7 +181,7 @@ def run_analysis(df_main, df_num_issued_licenses_per_year, df_full, min_license_
     ############ FULL DATA ##############
 
     ###### Range of licnse issue year per age group
-    target_df_with_sum_full = pd.DataFrame(df_full.sum(axis=0), columns=['num_accidents']).sort_index()
+    target_df_with_sum_full = pd.DataFrame(df_full.sum(axis=0), columns=['number_of_accidents']).sort_index()
 
     target_year_df_with_sum_full = target_df_with_sum_full.loc[
                               (slice(None), [str(x) for x in range(0, 3000)]),
@@ -192,20 +192,20 @@ def run_analysis(df_main, df_num_issued_licenses_per_year, df_full, min_license_
     creat_year_of_license_for_each_age_table(target_year_df_with_sum_full, name='full')
 
     ###### Num accidents per age group
-    num_accidents_per_age=target_year_df_with_sum_full.groupby(level=1).sum()
-    nice_plot(num_accidents_per_age,
+    number_of_accidents_per_age=target_year_df_with_sum_full.groupby(level=1).sum()
+    nice_plot(number_of_accidents_per_age,
               x_column=None,
-              y_column='num_accidents',
+              y_column='number_of_accidents',
               title='Number of drivers involved in accidents per age group',
-              plot_type='bar', save_fig='num_accidents_per_age_group')
+              plot_type='bar', save_fig='number_of_accidents_per_age_group')
 
     ###### Num accidents per year
-    num_accidents_per_year=df_full.groupby(axis=1, level=1).sum().sum(axis=1)
-    nice_plot(num_accidents_per_year,
+    number_of_accidents_per_year=df_full.groupby(axis=1, level=1).sum().sum(axis=1)
+    nice_plot(number_of_accidents_per_year,
               x_column=None,
               y_column=None,
               title='Number of drivers involved in accidents per year',
-              plot_type='line', save_fig='num_accidents_per_year',
+              plot_type='line', save_fig='number_of_accidents_per_year',
               rot=0)
     ############ CLEAN DATA ##############
 
@@ -217,7 +217,7 @@ def run_analysis(df_main, df_num_issued_licenses_per_year, df_full, min_license_
     target_df = df_main.loc[pd.date_range(start=f'{accident_year}-01-01', end=f'{accident_year}-12-31', freq="MS"), :]
 
     # Sum over each year of license issue
-    target_df_with_sum = pd.DataFrame(target_df.sum(axis=0), columns=['num_accidents']).sort_index()
+    target_df_with_sum = pd.DataFrame(target_df.sum(axis=0), columns=['number_of_accidents']).sort_index()
 
     target_year_df_with_sum = target_df_with_sum.loc[
                               (slice(None), [str(x) for x in range(min_license_year, max_license_year + 1)]),
@@ -237,8 +237,6 @@ def run_analysis(df_main, df_num_issued_licenses_per_year, df_full, min_license_
               legend=['15-19', '20-24', '25-29', '30-34'],
               width=1.2)
 
-    # number of accidents due to range age, aggregate all months, years of the accidents, aggregate all issued license
-    #
 
 if __name__ == '__main__':
     os.makedirs('results', exist_ok=True)
@@ -248,7 +246,8 @@ if __name__ == '__main__':
     cutoff_license_year = 2013
     accident_year = 2019
     y_max_no_normalization = 250
-    y_max_normalization = 0.16
+    y_max_normalization = 25
+    factor = 10000
     parsed_data_path = "parsed_data.xlsx"
     df = parse_data(parsed_data_path=parsed_data_path)
 
@@ -258,24 +257,32 @@ if __name__ == '__main__':
                                                  skiprows=2,
                                                  usecols=[0,1],
                                                  names=["year_of_issue_license", "num_drivers"]).sort_index()
-    #
     run_analysis(clean_df, num_issued_licenses_per_year, df_full=df)
-    # methods = {"lr_effect": "linear regression",
-    #            "pr_effect": "polynomial regression",
-    #            "gn_effect": "generalization regression",
-    #            "mean_effect": "Mean",
-    #            "llr_effect": "local linear regression",
-    #            "lpr_effect": "local polynomial regression"}
-    # nmethods = {f"n{k}": f"Normalized {v}" for k, v in methods.items()}
-    # methods_effects, nmethods_effects = run_methods(clean_df.copy(), methods.copy(), nmethods.copy(), num_issued_licenses_per_year)
-    # df = {'Treatment Effect': [round(v, 3) for v in methods_effects.values()],
-    #       'Normalized Treatment Effect':[round(v, 3) for v in nmethods_effects.values()]}
-    # df = pd.DataFrame(df,
-    #                   index=[methods[k] for k in methods_effects.keys()],
-    #                   columns=["Treatment Effect", "Normalized Treatment Effect"])
-    # df.rename_axis('Method', inplace=True)
-    # print(f"\n\n{'=' * 10}Treatment Effects{'=' * 10}")
-    # print(df)
-    # df.to_csv("results/results.csv")
+    methods = {"lr_effect": "linear regression",
+               "pr_effect": "polynomial regression",
+               "gn_effect": "generalization regression",
+               "mean_effect": "Mean",
+               "llr_effect": "local linear regression",
+               "lpr_effect": "local polynomial regression"}
+    nmethods = {f"n{k}": f"Normalized {v}" for k, v in methods.items()}
+    methods_effects, nmethods_effects = run_methods(df=clean_df.copy(),
+                                                    methods=methods.copy(),
+                                                    nmethods=nmethods.copy(),
+                                                    num_issued_licenses_per_year=num_issued_licenses_per_year,
+                                                    min_license_year=min_license_year,
+                                                    max_license_year=max_license_year,
+                                                    cutoff_license_year=cutoff_license_year,
+                                                    accident_year=accident_year,
+                                                    y_max_no_normalization=y_max_no_normalization,
+                                                    y_max_normalization=y_max_normalization)
+    df = {'Treatment Effect': [round(v, 3) for v in methods_effects.values()],
+          'Normalized Treatment Effect':[round(v, 3) for v in nmethods_effects.values()]}
+    df = pd.DataFrame(df,
+                      index=[methods[k] for k in methods_effects.keys()],
+                      columns=["Treatment Effect", "Normalized Treatment Effect"])
+    df.rename_axis('Method', inplace=True)
+    print(f"\n\n{'=' * 10}Treatment Effects{'=' * 10}")
+    print(df)
+    df.to_csv("results/results.csv")
 
 

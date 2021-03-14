@@ -24,11 +24,15 @@ def linear_regression(df, target_col, cutoff_date,y_max,min_license_year,max_lic
     X0 = np.concatenate([X0, [[cutoff_date,0]]])
     X1 = df[df["treatment"] == 1][["date", "treatment"]].astype(int).values
     X1 = np.concatenate([[[cutoff_date,1]], X1])
-    plt.plot(X0[:, 0], lr.predict(X0), c="blue", label="old accompaniment program")
-    plt.plot(X1[:, 0], lr.predict(X1), c="orange", label="new accompaniment program")
-    plt.axvline(x=cutoff_date, linestyle='--', c="black", label="cut-off year")
+    plt.plot(X0[:, 0], lr.predict(X0), label="old accompaniment program")
+    plt.plot(X1[:, 0], lr.predict(X1), label="new accompaniment program")
+    plt.axvline(x=cutoff_date, linestyle='--', c="black", label="cut-off date")
     plt.xlabel("Year of issued license")
-    plt.ylabel(f"{target_col} in 2019")
+    if target_col == "normalized_number_of_accidents":
+        ylabel = "number of accidents in 2019 per 10,000 drivers"
+    else:
+        ylabel = "number of accidents in 2019"
+    plt.ylabel(ylabel)
     plt.title("RD by Linear Regression")
     plt.legend()
     plt.savefig(f"results/LinerRegression_{target_col}.png")
@@ -74,9 +78,14 @@ def polynomial_regression(df, target_col, cutoff_date, y_max, min_license_year,m
 
     # plt.plot(X0[:, 0], polyreg.predict(X0), c="blue", label="old accompaniment program")
     # plt.plot(X1[:, 0], polyreg.predict(X1), c="orange", label="new accompaniment program")
-    plt.axvline(x=cutoff_date, linestyle='--', c="black", label="cut-off year")
+    plt.axvline(x=cutoff_date, linestyle='--', c="black", label="cut-off date")
     plt.xlabel("Year of issued license")
-    plt.ylabel(f"{target_col} in 2019")
+    if target_col == "normalized_number_of_accidents":
+        ylabel = "number of accidents in 2019 per 10,000 drivers"
+    else:
+        ylabel = "number of accidents in 2019"
+    plt.ylabel(ylabel)
+    plt.ylabel(ylabel)
     plt.title(f"RD by Polynomial Regression w/ degree {degree}")
     plt.legend()
     plt.savefig(f"results/PolynomialRegression_deg_{degree}_{target_col}.png")
@@ -131,9 +140,13 @@ def generalization_regression(df, target_col, cutoff_date, y_max, min_license_ye
 
     # plt.plot(X0[:, 0], polyreg.predict(X0), c="blue", label="old accompaniment program")
     # plt.plot(X1[:, 0], polyreg.predict(X1), c="orange", label="new accompaniment program")
-    plt.axvline(x=cutoff_date, linestyle='--', c="black", label="cut-off year")
+    plt.axvline(x=cutoff_date, linestyle='--', c="black", label="cut-off date")
     plt.xlabel("Year of issued license")
-    plt.ylabel(f"{target_col} in 2019")
+    if target_col == "normalized_number_of_accidents":
+        ylabel = "number of accidents in 2019 per 10,000 drivers"
+    else:
+        ylabel = "number of accidents in 2019"
+    plt.ylabel(ylabel)
     plt.title(f"RD by Generalization Polynomial Regression w/ degree {degree}")
     plt.legend()
     plt.savefig(f"results/GeneralizationPolynomialRegression_deg_{degree}_{target_col}.png")
@@ -187,11 +200,15 @@ def local_linear_regression(df, target_col, delta, y_max, min_license_year,max_l
     X1 = df[df["treatment"] == 1][["date", "treatment"]].astype(float).values
     X1 = np.concatenate([[[0, 1]], X1])
 
-    plt.plot(X0[:, 0] + cutoff_date, lr0.predict(X0[:, 0].reshape(-1,1)), c="blue", label="old accompaniment program")
-    plt.plot(X1[:, 0] + cutoff_date, lr1.predict(X1[:, 0].reshape(-1,1)), c="orange", label="new accompaniment program")
-    plt.axvline(x=cutoff_date, linestyle='--', c="black", label="cut-off year")
+    plt.plot(X0[:, 0] + cutoff_date, lr0.predict(X0[:, 0].reshape(-1,1)), label="old accompaniment program")
+    plt.plot(X1[:, 0] + cutoff_date, lr1.predict(X1[:, 0].reshape(-1,1)), label="new accompaniment program")
+    plt.axvline(x=cutoff_date, linestyle='--', c="black", label="cut-off date")
     plt.xlabel("Year of issued license")
-    plt.ylabel(f"{target_col} in 2019")
+    if target_col == "normalized_number_of_accidents":
+        ylabel = "number of accidents in 2019 per 10,000 drivers"
+    else:
+        ylabel = "number of accidents in 2019"
+    plt.ylabel(ylabel)
     plt.title("RD by Local Linear Regression")
     plt.legend()
     plt.savefig(f"results/LocalLinerRegression_{target_col}.png")
@@ -255,9 +272,13 @@ def local_polynomial_regression(df, target_col, delta, y_max, min_license_year,m
 
     # plt.plot(X0[:, 0], polyreg.predict(X0), c="blue", label="old accompaniment program")
     # plt.plot(X1[:, 0], polyreg.predict(X1), c="orange", label="new accompaniment program")
-    plt.axvline(x=cutoff_date, linestyle='--', c="black", label="cut-off year")
+    plt.axvline(x=cutoff_date, linestyle='--', c="black", label="cut-off date")
     plt.xlabel("Year of issued license")
-    plt.ylabel(f"{target_col} in 2019")
+    if target_col == "normalized_number_of_accidents":
+        ylabel = "number of accidents in 2019 per 10,000 drivers"
+    else:
+        ylabel = "number of accidents in 2019"
+    plt.ylabel(ylabel)
     plt.title(f"RD by Polynomial Regression w/ degree {degree}")
     plt.legend()
     plt.savefig(f"results/LocalPolynomialRegression_deg_{degree}_{target_col}.png")
