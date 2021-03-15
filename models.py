@@ -4,6 +4,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.interpolate import make_interp_spline, BSpline
 from sklearn.preprocessing import PolynomialFeatures
+from statsmodels.regression.linear_model import OLS
+import statsmodels.api as sm
+from statsmodels.stats.weightstats import CompareMeans
+
 
 def linear_regression(df, target_col, cutoff_date,y_max,min_license_year,max_license_year):
     print(f"{'=' * 10}Linear Regression Method Results{'=' * 10}")
@@ -12,10 +16,16 @@ def linear_regression(df, target_col, cutoff_date,y_max,min_license_year,max_lic
     X = df[["date", "treatment"]].astype(int).values
     y = df[[target_col]].values
 
+
+    X_sm = sm.add_constant(X)
+    lr_stats = OLS(y,X_sm)
+    results = lr_stats.fit()
+
     lr = LinearRegression()
     lr.fit(X, y)
     effect = lr.coef_[0][1]
     print(f"Treatment effect on {target_col} is {effect}")
+    print(f"CI: {np.round(results.conf_int(cols=[2])[0], 3)}, pvalue={round(results.pvalues[2], 3)}")
 
     plt.scatter(X[:, 0], y, c="black")
     plt.xlim([min_license_year - 0.2, max_license_year + 0.2]) # 2005.8, 2018.2
@@ -51,11 +61,16 @@ def polynomial_regression(df, target_col, cutoff_date, y_max, min_license_year,m
 
     X_c = np.concatenate([polyfeatures, X[:, 1].reshape(-1, 1)], axis=1)
 
+    X_sm = sm.add_constant(X_c.copy())
+    lr_stats = OLS(y,X_sm)
+    results = lr_stats.fit(method='qr')
+
     polyreg = LinearRegression()
     polyreg.fit(X_c, y)
 
     effect = polyreg.coef_[0][-1]
     print(f"Treatment effect on {target_col} is {effect}")
+    print(f"CI: {np.round(results.conf_int()[-1], 3)}, pvalue={round(results.pvalues[-1], 3)}")
 
     plt.scatter(X[:, 0], y, c="black")
     plt.xlim([min_license_year - 0.2, max_license_year + 0.2])  # 2005.8, 2018.2
@@ -109,17 +124,22 @@ def generalization_regression(df, target_col, cutoff_date, y_max, min_license_ye
 
     X_c = np.concatenate([polyfeatures_DX, polyfeaturesX_DX, X[:, 1].reshape(-1, 1)], axis=1)
 
+    X_sm = sm.add_constant(X_c.copy())
+    lr_stats = OLS(y, X_sm)
+    results = lr_stats.fit(method='qr')
+
     polyreg = LinearRegression()
     polyreg.fit(X_c, y)
 
     effect = polyreg.coef_[0][-1]
     print(f"Treatment effect on {target_col} is {effect}")
+    print(f"CI: {np.round(results.conf_int()[-1], 3)}, pvalue={round(results.pvalues[-1], 3)}")
 
     plt.scatter(X[:, 0]+cutoff_date, y, c="black")
     plt.xlim([min_license_year - 0.2, max_license_year + 0.2]) # 2005.8, 2018.2
     plt.ylim([0,y_max])
     X0 = X_c[X_c[:, -1] == 0]
-    cutoff_date_polyfeatures_zeros = np.zeros((1,degree))#PolynomialFeatures(degree, include_bias=False).fit_transform(np.array([0]).reshape(-1, 1))
+    cutoff_date_polyfeatures_zeros = np.zeros((1,degree))
     cutoff_date_polyfeatures0 = np.concatenate([cutoff_date_polyfeatures_zeros, cutoff_date_polyfeatures_zeros, np.array([[0]])], axis=1)
     X0 = np.concatenate([X0, cutoff_date_polyfeatures0])
     X1 = X_c[X_c[:, -1] == 1]
@@ -164,11 +184,12 @@ def mean_method(df, target_col):
     print(f"{'=' * 10}Mean Method Results{'=' * 10}")
     effect = mean_1 - mean_0
     print(f"Treatment effect on {target_col} is {mean_1 - mean_0}")
+    cm = CompareMeans.from_data(df_t1.values,df_t0.values)
+    result = cm.ttest_ind(alternative='two-sided')
+    print(f"Two-sided T test: CI={np.round(cm.tconfint_diff(),3)} pvalue={round(result[1], 3)}")
+
     return effect
-    # result = ttest_ind(df_t0.values, df_t1.values)
-    # print(f"Two-sided T test: statistic {result[0]}, pvalue {result[1]}")
-    # result = ttest_ind(df_t0.values, df_t1.values, alternative="greater")
-    # print(f"One-sided T test: statistic {result[0]}, pvalue {result[1]}")
+
 
 def local_linear_regression(df, target_col, delta, y_max, min_license_year,max_license_year, cutoff_date=2013):
     print(f"{'=' * 10}Local Linear Regression Method Results{'=' * 10}")
