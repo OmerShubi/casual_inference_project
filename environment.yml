@@ -1,0 +1,12 @@
+name: CI
+channels:
+  - defaults
+dependencies:
+  - python=3.8
+  - matplotlib
+  - pandas
+  - seaborn
+  - numpy
+  - scikit-learn
+  - openpyxl
+  - statsmodels
