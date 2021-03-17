@@ -1,14 +1,14 @@
 from models import local_linear_regression, mean_method, linear_regression, polynomial_regression, \
     generalization_regression, local_polynomial_regression
 from statistics import nice_plot, creat_year_of_license_for_each_age_table
-from utils import parse_data, clean_data, optimal_bandwidth
+from utils import parse_data, clean_data, optimal_bandwidth, parse_gender_df, clean_gender_data
 import pandas as pd
 import numpy as np
 import os
 import matplotlib.pyplot as plt
 
 def run_methods(df, methods,nmethods, num_issued_licenses_per_year, min_license_year=2006, max_license_year=2018,\
-                cutoff_license_year=2013, accident_year=2019, y_max_no_normalization = 250, y_max_normalization = 0.16):
+                cutoff_license_year=2013, accident_year=2019, y_max_no_normalization = 250, y_max_normalization = 0.16,type=""):
     """
 
     :param df:
@@ -16,14 +16,16 @@ def run_methods(df, methods,nmethods, num_issued_licenses_per_year, min_license_
     """
     # prepare data for methods
 
-    # accidents that happened during accident_year
-    target_df = df.loc[pd.date_range(start=f'{accident_year}-01-01', end=f'{accident_year}-12-31', freq="MS"), :]
+    if not type:
+        # accidents that happened during accident_year
+        target_df = df.loc[pd.date_range(start=f'{accident_year}-01-01', end=f'{accident_year}-12-31', freq="MS"), :]
 
-    # Sum over each year of license issue
-    target_df_with_sum = pd.DataFrame(target_df.sum(axis=0), columns=['number_of_drivers_in_accidents']).sort_index()
-
-    target_year_df_with_sum = target_df_with_sum.loc[(slice(None), [str(x) for x in range(min_license_year, max_license_year + 1)]),
-                              :].copy(deep=True)
+        # Sum over each year of license issue
+        target_df_with_sum = pd.DataFrame(target_df.sum(axis=0), columns=['number_of_drivers_in_accidents']).sort_index()
+    else:
+        df.name = None
+        target_df_with_sum = pd.DataFrame(df, columns=['number_of_drivers_in_accidents']).sort_index()
+    target_year_df_with_sum = target_df_with_sum.loc[(slice(None), [str(x) for x in range(min_license_year, max_license_year + 1)]),:].copy(deep=True)
     target_year_df_with_sum = target_year_df_with_sum.swaplevel()
     target_year_df_with_sum.rename_axis(['date', 'age'], inplace=True)
     grouped_df = target_year_df_with_sum.groupby('date').sum()
@@ -48,7 +50,8 @@ def run_methods(df, methods,nmethods, num_issued_licenses_per_year, min_license_
                       cutoff_date=cutoff_license_year - 0.5,
                       y_max=y_max,
                       min_license_year=min_license_year,
-                      max_license_year=max_license_year)
+                      max_license_year=max_license_year,
+                      type=type)
 
     # poly regression
     pr_effect = polynomial_regression(df=grouped_df.copy(),
@@ -57,7 +60,8 @@ def run_methods(df, methods,nmethods, num_issued_licenses_per_year, min_license_
                           y_max=y_max,
                           min_license_year=min_license_year,
                           max_license_year=max_license_year,
-                          degree=3)
+                          degree=3,
+                          type=type)
 
     # generalization poly regression
     gn_effect = generalization_regression(df=grouped_df.copy(),
@@ -66,7 +70,8 @@ def run_methods(df, methods,nmethods, num_issued_licenses_per_year, min_license_
                               y_max=y_max,
                               min_license_year=min_license_year,
                               max_license_year=max_license_year,
-                              degree=3)
+                              degree=3,
+                              type=type)
 
     print(f"\n\n{'=' * 10}Non-Parametric Methods{'=' * 10}\n")
     # Mean method
@@ -90,7 +95,8 @@ def run_methods(df, methods,nmethods, num_issued_licenses_per_year, min_license_
                             y_max=y_max,
                             min_license_year=min_license_year,
                             max_license_year=max_license_year,
-                            delta=delta)
+                            delta=delta,
+                            type=type)
 
     # Local poly regression
     lpr_effect = local_polynomial_regression(df=grouped_df_delta.copy(),
@@ -100,7 +106,8 @@ def run_methods(df, methods,nmethods, num_issued_licenses_per_year, min_license_
                                 min_license_year=min_license_year,
                                 max_license_year=max_license_year,
                                 degree=2,
-                                cutoff_date=cutoff_license_year - 0.5)
+                                cutoff_date=cutoff_license_year - 0.5,
+                                type=type)
 
     # Normalization
     y_max = y_max_normalization
@@ -237,27 +244,8 @@ def run_analysis(df_main, df_num_issued_licenses_per_year, df_full, min_license_
               legend=['15-19', '20-24', '25-29', '30-34'],
               width=1.2)
 
-
-if __name__ == '__main__':
-    os.makedirs('results', exist_ok=True)
-    os.makedirs('analysis', exist_ok=True)
-    min_license_year = 2006
-    max_license_year = 2018
-    cutoff_license_year = 2013
-    accident_year = 2019
-    y_max_no_normalization = 250
-    y_max_normalization = 25
-    factor = 10000
-    parsed_data_path = "parsed_data.xlsx"
-    df = parse_data(parsed_data_path=parsed_data_path)
-
-    clean_df = clean_data(df, too_old_age=24)
-    num_issued_licenses_per_year = pd.read_excel('num_issued_licenses_per_year.xlsx',
-                                                 index_col=0,
-                                                 skiprows=2,
-                                                 usecols=[0,1],
-                                                 names=["year_of_issue_license", "num_drivers"]).sort_index()
-    run_analysis(clean_df, num_issued_licenses_per_year, df_full=df)
+def create_results(clean_df, num_issued_licenses_per_year, type=""):
+    print(f"\n\n{'=' * 10}Running Methods on {type}{'=' * 10}")
     methods = {"lr_effect": "linear regression",
                "pr_effect": "polynomial regression",
                "gn_effect": "generalization regression",
@@ -274,15 +262,53 @@ if __name__ == '__main__':
                                                     cutoff_license_year=cutoff_license_year,
                                                     accident_year=accident_year,
                                                     y_max_no_normalization=y_max_no_normalization,
-                                                    y_max_normalization=y_max_normalization)
+                                                    y_max_normalization=y_max_normalization,
+                                                    type=type)
     df = {'Treatment Effect': [round(v, 3) for v in methods_effects.values()],
-          'Normalized Treatment Effect':[round(v, 3) for v in nmethods_effects.values()]}
+          'Normalized Treatment Effect': [round(v, 3) for v in nmethods_effects.values()]}
     df = pd.DataFrame(df,
                       index=[methods[k] for k in methods_effects.keys()],
                       columns=["Treatment Effect", "Normalized Treatment Effect"])
     df.rename_axis('Method', inplace=True)
     print(f"\n\n{'=' * 10}Treatment Effects{'=' * 10}")
     print(df)
-    df.to_csv("results/results.csv")
+    df.to_csv(f"results/results_{type}.csv")
+
+if __name__ == '__main__':
+    os.makedirs('results', exist_ok=True)
+    os.makedirs('analysis', exist_ok=True)
+    min_license_year = 2006
+    max_license_year = 2018
+    cutoff_license_year = 2013
+    accident_year = 2019
+    y_max_no_normalization = 250
+    y_max_normalization = 25
+    factor = 10000
+    parsed_data_path = "parsed_data.xlsx"
+    df = parse_data(parsed_data_path=parsed_data_path, original_data_path = "full_data.xlsx")
+
+    clean_df = clean_data(df, too_old_age=24)
+    num_issued_licenses_per_year = pd.read_excel('num_issued_licenses_per_year.xlsx',
+                                                 index_col=0,
+                                                 skiprows=2,
+                                                 usecols=[0,1],
+                                                 names=["year_of_issue_license", "num_drivers"]).sort_index()
+    run_analysis(clean_df, num_issued_licenses_per_year, df_full=df)
+    create_results(clean_df, num_issued_licenses_per_year, type="")
+    parsed_gender_df = parse_gender_df(original_data_path="full_data_by_gender.xlsx",
+                                      parsed_data_path="parsed_data_gender.xlsx")
+    clean_gender_df = clean_gender_data(df=parsed_gender_df, too_old_age=24)
+    num_issued_licenses_per_year_male = pd.read_excel('num_issued_licenses_per_year_male.xlsx',
+                                                 index_col=0,
+                                                 skiprows=2,
+                                                 usecols=[0, 1],
+                                                 names=["year_of_issue_license", "num_drivers"]).sort_index()
+    num_issued_licenses_per_year_female = pd.read_excel('num_issued_licenses_per_year_female.xlsx',
+                                                      index_col=0,
+                                                      skiprows=2,
+                                                      usecols=[0, 1],
+                                                      names=["year_of_issue_license", "num_drivers"]).sort_index()
+    create_results(clean_gender_df.loc['male',:], num_issued_licenses_per_year_male, type="male")
+    create_results(clean_gender_df.loc['female',:], num_issued_licenses_per_year_female, type="female")
 
 

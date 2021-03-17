@@ -4,8 +4,7 @@ import pandas as pd
 import numpy as np
 import statsmodels.formula.api as smf
 
-def parse_data(parsed_data_path):
-    original_data_path = "full_data.xlsx"
+def parse_data(parsed_data_path,original_data_path):
     if not os.path.exists(parsed_data_path):
         print(f"{'=' * 10}Parsing data{'=' * 10}")
         header = pd.read_excel(original_data_path, skiprows=1, header=None).iloc[:2, :-1].ffill(axis=1)
@@ -35,6 +34,33 @@ def clean_data(df, too_old_age=24):
     df_final.dropna(axis=1, how='all', inplace=True)
     return df_final
 
+def parse_gender_df(original_data_path, parsed_data_path):
+    if not os.path.exists(parsed_data_path):
+        print(f"{'=' * 10}Parsing gender data{'=' * 10}")
+        header = pd.read_excel(original_data_path, skiprows=1, header=None).iloc[:2, :-1].ffill(axis=1)
+        df = pd.read_excel(original_data_path, skiprows=3, header=None, index_col=[797], parse_dates=True)
+        df.columns = pd.MultiIndex.from_arrays(header.values)
+        df.rename_axis('gender', inplace=True)
+        df.to_excel(parsed_data_path)
+    else:
+        print(f"{'=' * 10}Loading gender data from {parsed_data_path}{'=' * 10}")
+        df = pd.read_excel(parsed_data_path, header=[0, 1], index_col=0)
+    return df
+
+def clean_gender_data(df, year=2019, too_old_age=24):
+    res = []
+    license_year = [col[1] for col in df.columns]
+    max_age = [col[0][3:] for col in df.columns]
+    year_diff = year - pd.to_numeric(license_year, errors='coerce')
+    year_diff[year_diff < 0] = None
+    res.append(pd.to_numeric(max_age, errors='coerce') - year_diff)
+    mask = pd.DataFrame(res, index=df.index.copy())
+    mask.columns = df.columns.copy()
+    mask[mask > too_old_age] = None
+    df_final = df[mask > 0]
+    df_final.dropna(axis=0, how='all', inplace=True)
+    df_final.dropna(axis=1, how='all', inplace=True)
+    return df_final
 
 def optimal_bandwidth(Y, X, cut=0):
     '''

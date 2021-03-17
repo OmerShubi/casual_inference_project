@@ -9,7 +9,7 @@ import statsmodels.api as sm
 from statsmodels.stats.weightstats import CompareMeans
 
 
-def linear_regression(df, target_col, cutoff_date,y_max,min_license_year,max_license_year):
+def linear_regression(df, target_col, cutoff_date,y_max,min_license_year,max_license_year, type=""):
     print(f"{'=' * 10}Linear Regression Method Results{'=' * 10}")
 
     df.reset_index(inplace=True)
@@ -45,12 +45,12 @@ def linear_regression(df, target_col, cutoff_date,y_max,min_license_year,max_lic
     plt.ylabel(ylabel)
     plt.title("RD by Linear Regression")
     plt.legend()
-    plt.savefig(f"results/LinerRegression_{target_col}.png")
+    plt.savefig(f"results/LinerRegression_{target_col}_{type}.png")
     plt.show()
 
     return effect
 
-def polynomial_regression(df, target_col, cutoff_date, y_max, min_license_year,max_license_year, degree=5):
+def polynomial_regression(df, target_col, cutoff_date, y_max, min_license_year,max_license_year, degree=5, type=""):
     print(f"{'=' * 10}Polynomial Regression {degree} Method Results{'=' * 10}")
 
     df.reset_index(inplace=True)
@@ -103,12 +103,12 @@ def polynomial_regression(df, target_col, cutoff_date, y_max, min_license_year,m
     plt.ylabel(ylabel)
     plt.title(f"RD by Polynomial Regression w/ degree {degree}")
     plt.legend()
-    plt.savefig(f"results/PolynomialRegression_deg_{degree}_{target_col}.png")
+    plt.savefig(f"results/PolynomialRegression_deg_{degree}_{target_col}_{type}.png")
     plt.show()
 
     return effect
 
-def generalization_regression(df, target_col, cutoff_date, y_max, min_license_year,max_license_year, degree=3):
+def generalization_regression(df, target_col, cutoff_date, y_max, min_license_year,max_license_year, degree=3, type=""):
     print(f"{'=' * 10}Generalization Polynomial Regression {degree} Method Results{'=' * 10}")
 
     df.reset_index(inplace=True)
@@ -169,7 +169,7 @@ def generalization_regression(df, target_col, cutoff_date, y_max, min_license_ye
     plt.ylabel(ylabel)
     plt.title(f"RD by Generalization Polynomial Regression w/ degree {degree}")
     plt.legend()
-    plt.savefig(f"results/GeneralizationPolynomialRegression_deg_{degree}_{target_col}.png")
+    plt.savefig(f"results/GeneralizationPolynomialRegression_deg_{degree}_{target_col}_{type}.png")
     plt.show()
 
     return effect
@@ -191,7 +191,7 @@ def mean_method(df, target_col):
     return effect
 
 
-def local_linear_regression(df, target_col, delta, y_max, min_license_year,max_license_year, cutoff_date=2013):
+def local_linear_regression(df, target_col, delta, y_max, min_license_year,max_license_year, cutoff_date=2013, type=""):
     print(f"{'=' * 10}Local Linear Regression Method Results{'=' * 10}")
 
     df.reset_index(inplace=True)
@@ -232,12 +232,12 @@ def local_linear_regression(df, target_col, delta, y_max, min_license_year,max_l
     plt.ylabel(ylabel)
     plt.title("RD by Local Linear Regression")
     plt.legend()
-    plt.savefig(f"results/LocalLinerRegression_{target_col}.png")
+    plt.savefig(f"results/LocalLinerRegression_{target_col}_{type}.png")
     plt.show()
 
     return effect
 
-def local_polynomial_regression(df, target_col, delta, y_max, min_license_year,max_license_year, degree=3, cutoff_date=2013):
+def local_polynomial_regression(df, target_col, delta, y_max, min_license_year,max_license_year, degree=3, cutoff_date=2013, type=""):
     print(f"{'=' * 10}Local Polynomial Regression Method Results{'=' * 10}")
 
     df.reset_index(inplace=True)
@@ -277,22 +277,10 @@ def local_polynomial_regression(df, target_col, delta, y_max, min_license_year,m
     spl = make_interp_spline(X0[:, 0], polyreg0.predict(X0), k=k)  # type: BSpline
     power_smooth = spl(xnew)
     plt.plot(xnew + cutoff_date, power_smooth, label="old accompaniment program")
-    # xnew = np.linspace(X0.min(axis=0), X0.max(axis=0), 5)
-    # spl = make_interp_spline(xnew[:, 0], polyreg0.predict(xnew).squeeze(1), k=3)  # type: BSpline
-    # power_smooth = spl(xnew[:,0])
-    # plt.plot(xnew[:,0] + cutoff_date, power_smooth, label="old accompaniment program")
-
     xnew = np.linspace(X1[:, 0].min(), X1[:, 0].max(), 300)
     spl = make_interp_spline(X1[:, 0], polyreg1.predict(X1), k=k)  # type: BSpline
     power_smooth = spl(xnew)
     plt.plot(xnew + cutoff_date, power_smooth, label="new accompaniment program")
-    # xnew = np.linspace(X1.min(axis=0), X1.max(axis=0), 300)
-    # spl = make_interp_spline(xnew[:, 0], polyreg1.predict(xnew).squeeze(1), k=3)  # type: BSpline
-    # power_smooth = spl(xnew[:,0])
-    # plt.plot(xnew[:, 0] + cutoff_date, power_smooth, label="new accompaniment program")
-
-    # plt.plot(X0[:, 0], polyreg.predict(X0), c="blue", label="old accompaniment program")
-    # plt.plot(X1[:, 0], polyreg.predict(X1), c="orange", label="new accompaniment program")
     plt.axvline(x=cutoff_date, linestyle='--', c="black", label="cut-off date")
     plt.xlabel("Year of issued license")
     if target_col == "normalized_number_of_drivers_in_accidents":
@@ -302,7 +290,7 @@ def local_polynomial_regression(df, target_col, delta, y_max, min_license_year,m
     plt.ylabel(ylabel)
     plt.title(f"RD by Polynomial Regression w/ degree {degree}")
     plt.legend()
-    plt.savefig(f"results/LocalPolynomialRegression_deg_{degree}_{target_col}.png")
+    plt.savefig(f"results/LocalPolynomialRegression_deg_{degree}_{target_col}_{type}.png")
     plt.show()
 
     return effect
