@@ -288,7 +288,7 @@ def local_polynomial_regression(df, target_col, delta, y_max, min_license_year,m
     else:
         ylabel = "number of drivers in accidents in 2019"
     plt.ylabel(ylabel)
-    plt.title(f"RD by Polynomial Regression w/ degree {degree}")
+    plt.title(f"RD by Local Polynomial Regression w/ degree {degree}")
     plt.legend()
     plt.savefig(f"results/LocalPolynomialRegression_deg_{degree}_{target_col}_{type}.png")
     plt.show()
