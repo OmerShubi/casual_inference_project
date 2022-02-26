@@ -9,16 +9,15 @@ import statsmodels.api as sm
 from statsmodels.stats.weightstats import CompareMeans
 
 
-def linear_regression(df, target_col, cutoff_date,y_max,min_license_year,max_license_year, type=""):
+def linear_regression(df, target_col, cutoff_date, y_max, min_license_year, max_license_year, type=""):
     print(f"{'=' * 10}Linear Regression Method Results{'=' * 10}")
 
     df.reset_index(inplace=True)
     X = df[["date", "treatment"]].astype(int).values
     y = df[[target_col]].values
 
-
     X_sm = sm.add_constant(X)
-    lr_stats = OLS(y,X_sm)
+    lr_stats = OLS(y, X_sm)
     results = lr_stats.fit()
 
     lr = LinearRegression()
@@ -28,12 +27,12 @@ def linear_regression(df, target_col, cutoff_date,y_max,min_license_year,max_lic
     print(f"CI: {np.round(results.conf_int(cols=[2])[0], 3)}, pvalue={round(results.pvalues[2], 3)}")
 
     plt.scatter(X[:, 0], y, c="black")
-    plt.xlim([min_license_year - 0.2, max_license_year + 0.2]) # 2005.8, 2018.2
-    plt.ylim([0,y_max])
+    plt.xlim([min_license_year - 0.2, max_license_year + 0.2])  # 2005.8, 2018.2
+    plt.ylim([0, y_max])
     X0 = df[df["treatment"] == 0][["date", "treatment"]].astype(int).values
-    X0 = np.concatenate([X0, [[cutoff_date,0]]])
+    X0 = np.concatenate([X0, [[cutoff_date, 0]]])
     X1 = df[df["treatment"] == 1][["date", "treatment"]].astype(int).values
-    X1 = np.concatenate([[[cutoff_date,1]], X1])
+    X1 = np.concatenate([[[cutoff_date, 1]], X1])
     plt.plot(X0[:, 0], lr.predict(X0), label="old accompaniment program")
     plt.plot(X1[:, 0], lr.predict(X1), label="new accompaniment program")
     plt.axvline(x=cutoff_date, linestyle='--', c="black", label="cut-off date")
@@ -50,7 +49,8 @@ def linear_regression(df, target_col, cutoff_date,y_max,min_license_year,max_lic
 
     return effect
 
-def polynomial_regression(df, target_col, cutoff_date, y_max, min_license_year,max_license_year, degree=5, type=""):
+
+def polynomial_regression(df, target_col, cutoff_date, y_max, min_license_year, max_license_year, degree=5, type=""):
     print(f"{'=' * 10}Polynomial Regression {degree} Method Results{'=' * 10}")
 
     df.reset_index(inplace=True)
@@ -62,7 +62,7 @@ def polynomial_regression(df, target_col, cutoff_date, y_max, min_license_year,m
     X_c = np.concatenate([polyfeatures, X[:, 1].reshape(-1, 1)], axis=1)
 
     X_sm = sm.add_constant(X_c.copy())
-    lr_stats = OLS(y,X_sm)
+    lr_stats = OLS(y, X_sm)
     results = lr_stats.fit(method='qr')
 
     polyreg = LinearRegression()
@@ -74,10 +74,10 @@ def polynomial_regression(df, target_col, cutoff_date, y_max, min_license_year,m
 
     plt.scatter(X[:, 0], y, c="black")
     plt.xlim([min_license_year - 0.2, max_license_year + 0.2])  # 2005.8, 2018.2
-    plt.ylim([0,y_max])
+    plt.ylim([0, y_max])
     X0 = X_c[X_c[:, -1] == 0]
-    cutoff_date_polyfeatures = PolynomialFeatures(degree, include_bias=False).fit_transform(np.array([cutoff_date]).reshape(-1,1))
-    X0 = np.concatenate([X0, [list(cutoff_date_polyfeatures[0])+[0]]])
+    cutoff_date_polyfeatures = PolynomialFeatures(degree, include_bias=False).fit_transform(np.array([cutoff_date]).reshape(-1, 1))
+    X0 = np.concatenate([X0, [list(cutoff_date_polyfeatures[0]) + [0]]])
     X1 = X_c[X_c[:, -1] == 1]
     X1 = np.concatenate([[list(cutoff_date_polyfeatures[0]) + [1]], X1])
 
@@ -108,17 +108,18 @@ def polynomial_regression(df, target_col, cutoff_date, y_max, min_license_year,m
 
     return effect
 
-def generalization_regression(df, target_col, cutoff_date, y_max, min_license_year,max_license_year, degree=3, type=""):
+
+def generalization_regression(df, target_col, cutoff_date, y_max, min_license_year, max_license_year, degree=3, type=""):
     print(f"{'=' * 10}Generalization Polynomial Regression {degree} Method Results{'=' * 10}")
 
     df.reset_index(inplace=True)
     df['date'] = df['date'].astype(float)
-    df['date'] -= cutoff_date # center
+    df['date'] -= cutoff_date  # center
     X = df[["date", "treatment"]].astype(float).values
     y = df[[target_col]].values
 
-    DX0 = X[:, 0]*X[:, 1]
-    X0_DX0 = X[:, 0] - X[:, 0]*X[:, 1]
+    DX0 = X[:, 0] * X[:, 1]
+    X0_DX0 = X[:, 0] - X[:, 0] * X[:, 1]
     polyfeatures_DX = PolynomialFeatures(degree, include_bias=False).fit_transform(DX0.reshape(-1, 1))
     polyfeaturesX_DX = PolynomialFeatures(degree, include_bias=False).fit_transform(X0_DX0.reshape(-1, 1))
 
@@ -135,11 +136,11 @@ def generalization_regression(df, target_col, cutoff_date, y_max, min_license_ye
     print(f"Treatment effect on {target_col} is {effect}")
     print(f"CI: {np.round(results.conf_int()[-1], 3)}, pvalue={round(results.pvalues[-1], 3)}")
 
-    plt.scatter(X[:, 0]+cutoff_date, y, c="black")
-    plt.xlim([min_license_year - 0.2, max_license_year + 0.2]) # 2005.8, 2018.2
-    plt.ylim([0,y_max])
+    plt.scatter(X[:, 0] + cutoff_date, y, c="black")
+    plt.xlim([min_license_year - 0.2, max_license_year + 0.2])  # 2005.8, 2018.2
+    plt.ylim([0, y_max])
     X0 = X_c[X_c[:, -1] == 0]
-    cutoff_date_polyfeatures_zeros = np.zeros((1,degree))
+    cutoff_date_polyfeatures_zeros = np.zeros((1, degree))
     cutoff_date_polyfeatures0 = np.concatenate([cutoff_date_polyfeatures_zeros, cutoff_date_polyfeatures_zeros, np.array([[0]])], axis=1)
     X0 = np.concatenate([X0, cutoff_date_polyfeatures0])
     X1 = X_c[X_c[:, -1] == 1]
@@ -174,6 +175,7 @@ def generalization_regression(df, target_col, cutoff_date, y_max, min_license_ye
 
     return effect
 
+
 def mean_method(df, target_col):
     df_t0 = df.loc[(df['treatment'] == 0) & (df['in_delta'] == 1)]
     df_t1 = df.loc[(df['treatment'] == 1) & (df['in_delta'] == 1)]
@@ -184,14 +186,14 @@ def mean_method(df, target_col):
     print(f"{'=' * 10}Mean Method Results{'=' * 10}")
     effect = mean_1 - mean_0
     print(f"Treatment effect on {target_col} is {mean_1 - mean_0}")
-    cm = CompareMeans.from_data(df_t1.values,df_t0.values)
+    cm = CompareMeans.from_data(df_t1.values, df_t0.values)
     result = cm.ttest_ind(alternative='two-sided')
-    print(f"Two-sided T test: CI={np.round(cm.tconfint_diff(),3)} pvalue={round(result[1], 3)}")
+    print(f"Two-sided T test: CI={np.round(cm.tconfint_diff(), 3)} pvalue={round(result[1], 3)}")
 
     return effect
 
 
-def local_linear_regression(df, target_col, delta, y_max, min_license_year,max_license_year, cutoff_date=2013, type=""):
+def local_linear_regression(df, target_col, delta, y_max, min_license_year, max_license_year, cutoff_date=2013, type=""):
     print(f"{'=' * 10}Local Linear Regression Method Results{'=' * 10}")
 
     df.reset_index(inplace=True)
@@ -201,28 +203,28 @@ def local_linear_regression(df, target_col, delta, y_max, min_license_year,max_l
 
     X = df[["date", "treatment"]].astype(float).values
     y = df[[target_col]].values
-    sample_weight = 1 - np.abs(df['date'])/delta
+    sample_weight = 1 - np.abs(df['date']) / delta
 
-    t0_indices = X[:,1] == 0
-    t1_indices = X[:,1] == 1
+    t0_indices = X[:, 1] == 0
+    t1_indices = X[:, 1] == 1
     lr0 = LinearRegression()
-    lr0.fit(X[t0_indices,0].reshape(-1,1), y[t0_indices], sample_weight[t0_indices])
+    lr0.fit(X[t0_indices, 0].reshape(-1, 1), y[t0_indices], sample_weight[t0_indices])
     lr1 = LinearRegression()
-    lr1.fit(X[t1_indices,0].reshape(-1,1), y[t1_indices], sample_weight[t1_indices])
+    lr1.fit(X[t1_indices, 0].reshape(-1, 1), y[t1_indices], sample_weight[t1_indices])
 
-    effect = lr1.intercept_[0]-lr0.intercept_[0]
+    effect = lr1.intercept_[0] - lr0.intercept_[0]
     print(f"Treatment effect on {target_col} is {effect}")
 
     plt.scatter(X[:, 0] + cutoff_date, y, c="black")
-    plt.xlim([min_license_year - 0.2, max_license_year + 0.2]) # 2005.8, 2018.2
-    plt.ylim([0,y_max])
+    plt.xlim([min_license_year - 0.2, max_license_year + 0.2])  # 2005.8, 2018.2
+    plt.ylim([0, y_max])
     X0 = df[df["treatment"] == 0][["date", "treatment"]].astype(float).values
     X0 = np.concatenate([X0, [[0, 0]]])
     X1 = df[df["treatment"] == 1][["date", "treatment"]].astype(float).values
     X1 = np.concatenate([[[0, 1]], X1])
 
-    plt.plot(X0[:, 0] + cutoff_date, lr0.predict(X0[:, 0].reshape(-1,1)), label="old accompaniment program")
-    plt.plot(X1[:, 0] + cutoff_date, lr1.predict(X1[:, 0].reshape(-1,1)), label="new accompaniment program")
+    plt.plot(X0[:, 0] + cutoff_date, lr0.predict(X0[:, 0].reshape(-1, 1)), label="old accompaniment program")
+    plt.plot(X1[:, 0] + cutoff_date, lr1.predict(X1[:, 0].reshape(-1, 1)), label="new accompaniment program")
     plt.axvline(x=cutoff_date, linestyle='--', c="black", label="cut-off date")
     plt.xlabel("Year of issued license")
     if target_col == "normalized_number_of_drivers_in_accidents":
@@ -237,7 +239,8 @@ def local_linear_regression(df, target_col, delta, y_max, min_license_year,max_l
 
     return effect
 
-def local_polynomial_regression(df, target_col, delta, y_max, min_license_year,max_license_year, degree=3, cutoff_date=2013, type=""):
+
+def local_polynomial_regression(df, target_col, delta, y_max, min_license_year, max_license_year, degree=3, cutoff_date=2013, type=""):
     print(f"{'=' * 10}Local Polynomial Regression Method Results{'=' * 10}")
 
     df.reset_index(inplace=True)
@@ -249,24 +252,24 @@ def local_polynomial_regression(df, target_col, delta, y_max, min_license_year,m
     y = df[[target_col]].values
     sample_weight = 1 - np.abs(df['date']) / delta
 
-    t0_indices = X[:,1] == 0
-    t1_indices = X[:,1] == 1
+    t0_indices = X[:, 1] == 0
+    t1_indices = X[:, 1] == 1
 
-    polyfeatures0 = PolynomialFeatures(degree, include_bias=False).fit_transform(X[t0_indices,0].reshape(-1,1))
-    polyfeatures1 = PolynomialFeatures(degree, include_bias=False).fit_transform(X[t1_indices,0].reshape(-1, 1))
+    polyfeatures0 = PolynomialFeatures(degree, include_bias=False).fit_transform(X[t0_indices, 0].reshape(-1, 1))
+    polyfeatures1 = PolynomialFeatures(degree, include_bias=False).fit_transform(X[t1_indices, 0].reshape(-1, 1))
 
     polyreg0 = LinearRegression()
     polyreg0.fit(polyfeatures0, y[t0_indices], sample_weight[t0_indices])
     polyreg1 = LinearRegression()
     polyreg1.fit(polyfeatures1, y[t1_indices], sample_weight[t1_indices])
 
-    effect = polyreg1.intercept_[0]-polyreg0.intercept_[0]
+    effect = polyreg1.intercept_[0] - polyreg0.intercept_[0]
     print(f"Treatment effect on {target_col} is {effect}")
 
     plt.scatter(X[:, 0] + cutoff_date, y, c="black")
     plt.xlim([min_license_year - 0.2, max_license_year + 0.2])  # 2005.8, 2018.2
     plt.ylim([0, y_max])
-    cutoff_date_polyfeatures = np.zeros((1,degree))
+    cutoff_date_polyfeatures = np.zeros((1, degree))
     X0 = np.concatenate([polyfeatures0, cutoff_date_polyfeatures])
     X1 = np.concatenate([cutoff_date_polyfeatures, polyfeatures1])
 
